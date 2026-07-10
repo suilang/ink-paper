@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0). Leave empty to use CFBundleShortVersionString from Info.plist."
+        required: false
+        default: ""
+      draft:
+        description: "Create as draft release"
+        type: boolean
+        default: true
+      prerelease:
+        description: "Mark as prerelease"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' InkPaper/Resources/Info.plist)
+            TAG="v${VER}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag: ${TAG}"
+
+      - name: Build Release
+        run: |
+          xcodebuild \
+            -scheme InkPaper \
+            -project InkPaper.xcodeproj \
+            -configuration Release \
+            -derivedDataPath .derivedData \
+            -destination 'generic/platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package .app and .zip
+        run: |
+          APP=".derivedData/Build/Products/Release/InkPaper.app"
+          test -d "$APP"
+          mkdir -p dist
+          ditto -c -k --keepParent "$APP" "dist/InkPaper-${{ steps.version.outputs.tag }}-macos.zip"
+
+      - name: Create DMG
+        run: |
+          APP=".derivedData/Build/Products/Release/InkPaper.app"
+          STAGE="$(mktemp -d)"
+          DMG="dist/InkPaper-${{ steps.version.outputs.tag }}-macos.dmg"
+          cp -R "$APP" "$STAGE/"
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create -volname "Ink Paper" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+          rm -rf "$STAGE"
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Ink Paper ${{ steps.version.outputs.tag }}
+          draft: ${{ github.event.inputs.draft }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: |
+            dist/InkPaper-${{ steps.version.outputs.tag }}-macos.zip
+            dist/InkPaper-${{ steps.version.outputs.tag }}-macos.dmg
+          body: |
+            ## Downloads
+
+            | Platform | File |
+            |----------|------|
+            | macOS | `InkPaper-*-macos.dmg` |
+            | macOS (zip) | `InkPaper-*-macos.zip` |
+
+            ## Unsigned build
+
+            This build is **not Apple Developer signed / notarized**.
+            On first open: right-click the app → **Open**, or see System Settings → Privacy & Security.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
