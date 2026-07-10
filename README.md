@@ -1,77 +1,89 @@
 # Ink Paper
 
-[English](README.md) | [中文](README.zh-CN.md) | [日本語](README.ja.md)
+[中文](README.md) | [English](README.en.md) | [日本語](README.ja.md)
 
-> A lightweight, native macOS static wallpaper tool — prefer the system wallpaper API; fall back to a desktop-level overlay when it cannot write.
+> 轻量、原生的 macOS 静态壁纸工具——能改系统就改系统，改不了就用底层窗口兜底。
 
-Ink Paper is built with Swift + AppKit and offers two mutually exclusive modes: set the system desktop wallpaper when possible; when the system wallpaper is unwritable or locked, place a full-screen window behind the desktop icons to act as wallpaper visually. v1 supports local static images only, lives in the menu bar, and uses one window per display.
-
----
-
-## Why this exists
-
-Changing a wallpaper should be simple, but on macOS it often is not:
-
-- **System wallpaper cannot be written** — on managed devices, with configuration profiles, or under permission / system-state issues, many tools only error out or fail silently.
-- **“Fake wallpaper” windows steal interaction** — covering the desktop with a normal window can block the Dock, menu bar, or desktop icon clicks.
-- **Multi-display setups break** — after plugging / unplugging external displays or changing resolution, overlays misalign or only cover the main screen.
-
-Ink Paper is built for that:
-
-1. **Prefer the system when it works** (Mode A); degrade to a desktop-level overlay (Mode B) when Mode A fails or is unavailable. Modes are mutually exclusive; switches are transactional and can roll back.
-2. **Overlay does not steal interaction** — never becomes key, click-through, desktop-level stacking so Dock / menu bar / desktop icons stay usable.
-3. **One window per display**, rebuilt on screen connect / disconnect and resolution changes.
-4. **Native and performance-first** — config persists locally and restores on launch; failures surface actionable messages instead of failing silently.
+Ink Paper 用 Swift + AppKit 实现两种互斥运行模式：优先写入系统桌面壁纸；在系统壁纸不可写或被锁定时，用铺在桌面底层的全屏窗口视觉上充当壁纸。第一版仅支持本地静态图片，菜单栏常驻，多显示器一屏一窗。
 
 ---
 
-## What you can do
+## 为什么做这个
 
-| Feature | Description |
-|---------|-------------|
-| **System wallpaper mode** | Set / read macOS system static wallpapers |
-| **Overlay wallpaper mode** | Full-screen desktop-level image windows when the system is unwritable |
-| **Auto / manual mode** | Health checks recommend a mode; you can also force one |
-| **Multi-display** | One image for all screens, or a different image per display |
-| **Scale modes** | fill / fit / stretch / center |
-| **Menu bar entry** | Always-on menu bar control for picking images and toggling |
-| **Launch at login** | Optionally start at login and restore the last wallpaper state |
+换壁纸本该是一件小事，但在 macOS 上经常会卡住：
 
-> Out of scope for this release: video / dynamic / web wallpapers, Windows / Linux, online galleries, scheduled multi-image rotation, and similar. See the [technical requirements](docs/technical-requirements.md).
+- **系统壁纸写不进去**：公司设备、配置描述文件、权限或系统状态异常时，常见壁纸工具只能报错或静默失败。
+- **「假壁纸」又容易抢交互**：用普通窗口盖桌面，容易挡住 Dock、菜单栏或桌面图标点击。
+- **多屏体验割裂**：外接屏插拔、分辨率变化后，窗口错位或只覆盖主屏。
+
+Ink Paper 为此而建：
+
+1. **能改系统就改系统**（模式 A），失败或不可用时再降级到底层窗口（模式 B），模式互斥、切换可回滚。
+2. **底层窗口不抢交互**：不可成为 Key Window、点击穿透、层级在桌面层，Dock / 菜单栏 / 桌面图标照常可用。
+3. **多屏一屏一窗**，跟随屏幕插拔与分辨率变化重建。
+4. **原生实现、性能优先**，配置本地持久化，启动按上次状态恢复；失败给出可操作提示，不静默吞掉。
 
 ---
 
-## Download & install
+## 你能用它做什么
 
-Grab a `.dmg` or `.zip` from [Releases](https://github.com/suilang/ink-paper/releases) and drag `InkPaper.app` into Applications.
+| 能力 | 说明 |
+|------|------|
+| **系统壁纸模式** | 直接设置 / 读取 macOS 系统静态壁纸 |
+| **底层窗口模式** | 系统不可写时，用桌面底层全屏图窗口兜底 |
+| **模式自动 / 手动** | 健康检查推荐模式，也可强制指定 |
+| **多显示器** | 全屏共用一张图，或按显示器分别设置 |
+| **缩放策略** | fill / fit / stretch / center |
+| **菜单栏入口** | 常驻菜单栏，快速选图与开关 |
+| **登录启动** | 可选登录时启动并恢复上次壁纸状态 |
 
-Current builds are **not Apple Developer signed / notarized**. On first open, Gatekeeper may block the app — use any of these:
+> 本期不做：视频 / 动态 / 网页壁纸、Windows / Linux、在线图库、多图轮播调度等。详见 [技术需求文档](docs/technical-requirements.md)。
 
-1. **Right-click Open**: right-click the app → **Open** → confirm (do not double-click).
-2. **System Settings**: after a blocked open, go to **System Settings → Privacy & Security** → **Open Anyway**.
-3. **Unquarantine script**:
+---
+
+## 下载与安装
+
+从 [Releases](https://github.com/suilang/ink-paper/releases) 下载 `.dmg` 或 `.zip`，将 `InkPaper.app` 拖到「应用程序」。
+
+当前发布包**未做 Apple Developer 签名 / 公证**。首次打开可能被 Gatekeeper 拦截，任选其一即可：
+
+1. **右键打开**：在 App 上右键 → **打开** → 再点「打开」（不要直接双击）。
+2. **系统设置**：先双击一次被拦后，打开 **系统设置 → 隐私与安全性**，点 **仍要打开**。
+3. **一键脚本**（清除隔离标记）：
 
 ```bash
-# Defaults to /Applications/InkPaper.app
+# 默认处理 /Applications/InkPaper.app
 curl -fsSL https://raw.githubusercontent.com/suilang/ink-paper/main/scripts/unquarantine.sh | bash
 
-# Or run from a clone; optional App / DMG path
+# 或克隆仓库后本地执行；也可传入 App / DMG 路径
 ./scripts/unquarantine.sh
 ./scripts/unquarantine.sh /Applications/InkPaper.app
 ./scripts/unquarantine.sh ~/Downloads/InkPaper-v0.2.0-macos.dmg
 ```
 
-If it is still blocked, use step 1 or 2.
+若仍被拦截，再配合第 1 或第 2 步即可。
 
 ---
 
-## Open the project
+## 赞助
+
+如果本项目对您有帮助，欢迎请作者喝杯奶茶。
+
+<p align="center">
+  <img src="docs/assets/wechat-pay.png" width="180" alt="微信赞赏码" />
+</p>
+
+赞赏仅用于本项目维护与开发，不作他用。
+
+---
+
+## 打开工程
 
 ```bash
 open InkPaper.xcodeproj
 ```
 
-Or build from the command line:
+或命令行构建：
 
 ```bash
 xcodebuild -scheme InkPaper -project InkPaper.xcodeproj \
@@ -79,34 +91,22 @@ xcodebuild -scheme InkPaper -project InkPaper.xcodeproj \
   -derivedDataPath .derivedData build
 ```
 
-- Minimum OS: macOS 13.0
-- Bundle ID: `com.ink.InkPaper`
+- 最低系统：macOS 13.0
+- Bundle ID：`com.ink.InkPaper`
 
 ---
 
-## Docs
+## 文档
 
-| Doc | Description |
-|-----|-------------|
-| [docs/technical-requirements.md](docs/technical-requirements.md) | Product constraints and implementation guidance |
-| [docs/impl/README.md](docs/impl/README.md) | Current code behavior by module (Chinese) |
-
----
-
-## License
-
-This repository is licensed under the [MIT License](LICENSE).
-
-You may use, modify, and distribute freely, provided you retain the copyright and permission notice. The software is provided “as is”, without warranty of any kind.
+| 文档 | 说明 |
+|------|------|
+| [docs/technical-requirements.md](docs/technical-requirements.md) | 产品约束与实现指引（英文） |
+| [docs/impl/README.md](docs/impl/README.md) | 已落地代码行为（按模块拆分） |
 
 ---
 
-## Sponsor
+## 开源协议
 
-If this project helps you, feel free to buy the author a milk tea.
+本仓库采用 [MIT License](LICENSE)。
 
-<p align="center">
-  <img src="docs/assets/wechat-pay.png" width="180" alt="WeChat Pay QR code" />
-</p>
-
-Sponsorships are used only for maintaining and developing this project.
+可自由使用、修改与分发；须保留版权与许可声明。软件按「原样」提供，不附带任何明示或暗示担保。

@@ -1,6 +1,6 @@
 # Ink Paper
 
-[English](README.md) | [中文](README.zh-CN.md) | [日本語](README.ja.md)
+[中文](README.md) | [English](README.en.md) | [日本語](README.ja.md)
 
 > 軽量・ネイティブな macOS 静的壁紙ツール——システム壁紙を優先し、書けないときはデスクトップ下層ウィンドウで代替。
 
@@ -65,6 +65,18 @@ curl -fsSL https://raw.githubusercontent.com/suilang/ink-paper/main/scripts/unqu
 
 ---
 
+## スポンサー
+
+このプロジェクトが役に立ったら、作者にミルクティーをおごっていただけると嬉しいです。
+
+<p align="center">
+  <img src="docs/assets/wechat-pay.png" width="180" alt="WeChat 支払い QR" />
+</p>
+
+ご支援は本プロジェクトの維持・開発のみに使います。
+
+---
+
 ## プロジェクトを開く
 
 ```bash
@@ -98,15 +110,3 @@ xcodebuild -scheme InkPaper -project InkPaper.xcodeproj \
 本リポジトリは [MIT License](LICENSE) です。
 
 著作権表示と許諾表示を残す限り、自由に使用・改変・再配布できます。ソフトウェアは「現状のまま」提供され、明示・黙示を問わずいかなる保証もありません。
-
----
-
-## スポンサー
-
-このプロジェクトが役に立ったら、作者にミルクティーをおごっていただけると嬉しいです。
-
-<p align="center">
-  <img src="docs/assets/wechat-pay.png" width="180" alt="WeChat 支払い QR" />
-</p>
-
-ご支援は本プロジェクトの維持・開発のみに使います。
