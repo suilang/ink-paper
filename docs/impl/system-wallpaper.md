@@ -8,7 +8,9 @@
 
 - API：`NSWorkspace.shared.setDesktopImageURL(_:for:options:)`
 - 选项：`imageScaling = scaleProportionallyUpOrDown`，`allowClipping = true`
-- 对每个显示器分别设置；校验走 `ImagePipeline.validate`
+- 对每个有图的显示器分别设置；**「仅原生」屏跳过**（保留系统当前壁纸）
+- 若没有任何屏被设置则抛 `noImageConfigured`
+- 校验走 `ImagePipeline.validate`
 - **设置前**先 `probeDesktopLock()`；若锁定直接抛 `systemWallpaperUnavailable`
 - **设置后**异步回读当前壁纸路径（约 0.8s）；与目标不一致则判失败（覆盖“API 成功但被 MDM 打回”）
 

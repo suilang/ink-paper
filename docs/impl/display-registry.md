@@ -15,8 +15,9 @@
 监听 `NSApplication.didChangeScreenParametersNotification`：
 
 1. `refresh()` 重建 `displays`
-2. 若 ID 集合变化 → 设置 `lastChangeMessage = "检测到显示器变更，请确认分屏配置"`
-3. 回调 `onDisplaysChanged`（ModeEngine 用于重建 overlay）
+2. 用指纹（`id` + `frame` + `scaleFactor`）与变更前比较；**相同则直接返回**（过滤 Mission Control 等误触发）
+3. 若 ID 集合变化 → 设置 `lastChangeMessage = "检测到显示器变更，请确认分屏配置"`
+4. 仅指纹变化时回调 `onDisplaysChanged`（ModeEngine 轻量同步 overlay，不先销毁窗口）
 
 ## DisplayInfo 字段
 

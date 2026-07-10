@@ -9,6 +9,7 @@
 		9E48D84A9C6A4B2B80D26E46 /* AppServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2308660F5B25420893833B27 /* AppServices.swift */; };
 		04A30B68085048CF9692D067 /* InkPaperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3D44869F18C487E9AFCC5D4 /* InkPaperApp.swift */; };
 		D3FF699151594FDC9928CAFA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7E5E903A2DF49B69926AF27 /* AppDelegate.swift */; };
+		E7A1B2C3D4E5F60718293A01 /* SingleInstance.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A1B2C3D4E5F60718293A02 /* SingleInstance.swift */; };
 		3A97BD0671974F3C885479F0 /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95CCB35AD79346D5B1C63523 /* MenuBarController.swift */; };
 		20A37511EC024052A7492BA2 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7A9EF2D75344159BC11ACA /* AppConfig.swift */; };
 		750BA8A3AD374455A2CC25E1 /* ConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4ADA247F9944C269660F79B /* ConfigStore.swift */; };
@@ -18,6 +19,7 @@
 		F986BCC747494A9D9B94E7C0 /* ImagePipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C02B95ADC2E41E18588839A /* ImagePipeline.swift */; };
 		75B6D18DC36540D49B18CAA4 /* ModeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6714E98B3A449C79340CDC5 /* ModeEngine.swift */; };
 		F5A3C49DC82E45A593EB90CF /* OverlayWallpaperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0D325CCC734A20BCC85E09 /* OverlayWallpaperService.swift */; };
+		C8E4A1B2093D4F6A8B7C5D4E /* MissionControlMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F0E1A2B3C4456789ABCDEF /* MissionControlMonitor.swift */; };
 		88E2917B29824A6BBFFD1738 /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC290CFEFBD4B5C8C47B8A5 /* SettingsRootView.swift */; };
 		4BBB356441914290ADD1FE72 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C59EA940F04433C9FD74F3F /* SettingsWindowController.swift */; };
 		B5EED461594F442FB38256A5 /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52863F871CA6419ABB885641 /* AppError.swift */; };
@@ -31,6 +33,7 @@
 		D3D44869F18C487E9AFCC5D4 /* InkPaperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InkPaperApp.swift; sourceTree = "<group>"; };
 		249BA6CBF7BA4482B6ED4768 /* InkPaper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InkPaper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A7E5E903A2DF49B69926AF27 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		E7A1B2C3D4E5F60718293A02 /* SingleInstance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleInstance.swift; sourceTree = "<group>"; };
 		95CCB35AD79346D5B1C63523 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
 		4F7A9EF2D75344159BC11ACA /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		D4ADA247F9944C269660F79B /* ConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigStore.swift; sourceTree = "<group>"; };
@@ -40,6 +43,7 @@
 		1C02B95ADC2E41E18588839A /* ImagePipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePipeline.swift; sourceTree = "<group>"; };
 		A6714E98B3A449C79340CDC5 /* ModeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModeEngine.swift; sourceTree = "<group>"; };
 		1E0D325CCC734A20BCC85E09 /* OverlayWallpaperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWallpaperService.swift; sourceTree = "<group>"; };
+		D9F0E1A2B3C4456789ABCDEF /* MissionControlMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionControlMonitor.swift; sourceTree = "<group>"; };
 		3FC290CFEFBD4B5C8C47B8A5 /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
 		8C59EA940F04433C9FD74F3F /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		52863F871CA6419ABB885641 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
@@ -119,6 +123,7 @@
 				2308660F5B25420893833B27 /* AppServices.swift */,
 				D3D44869F18C487E9AFCC5D4 /* InkPaperApp.swift */,
 				95CCB35AD79346D5B1C63523 /* MenuBarController.swift */,
+				E7A1B2C3D4E5F60718293A02 /* SingleInstance.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -169,6 +174,7 @@
 			isa = PBXGroup;
 			children = (
 				1E0D325CCC734A20BCC85E09 /* OverlayWallpaperService.swift */,
+				D9F0E1A2B3C4456789ABCDEF /* MissionControlMonitor.swift */,
 			);
 			path = Overlay;
 			sourceTree = "<group>";
@@ -276,6 +282,7 @@
 				9E48D84A9C6A4B2B80D26E46 /* AppServices.swift in Sources */,
 				04A30B68085048CF9692D067 /* InkPaperApp.swift in Sources */,
 				D3FF699151594FDC9928CAFA /* AppDelegate.swift in Sources */,
+				E7A1B2C3D4E5F60718293A01 /* SingleInstance.swift in Sources */,
 				3A97BD0671974F3C885479F0 /* MenuBarController.swift in Sources */,
 				20A37511EC024052A7492BA2 /* AppConfig.swift in Sources */,
 				750BA8A3AD374455A2CC25E1 /* ConfigStore.swift in Sources */,
@@ -285,6 +292,7 @@
 				F986BCC747494A9D9B94E7C0 /* ImagePipeline.swift in Sources */,
 				75B6D18DC36540D49B18CAA4 /* ModeEngine.swift in Sources */,
 				F5A3C49DC82E45A593EB90CF /* OverlayWallpaperService.swift in Sources */,
+				C8E4A1B2093D4F6A8B7C5D4E /* MissionControlMonitor.swift in Sources */,
 				88E2917B29824A6BBFFD1738 /* SettingsRootView.swift in Sources */,
 				4BBB356441914290ADD1FE72 /* SettingsWindowController.swift in Sources */,
 				B5EED461594F442FB38256A5 /* AppError.swift in Sources */,
@@ -339,7 +347,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = InkPaper/Resources/Info.plist;
@@ -348,7 +356,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ink.InkPaper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -362,7 +370,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = InkPaper/Resources/Info.plist;
@@ -371,7 +379,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.ink.InkPaper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

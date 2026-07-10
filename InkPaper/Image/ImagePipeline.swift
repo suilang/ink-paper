@@ -124,6 +124,7 @@ enum ImagePipeline {
     }
 
     /// 在后台准备每屏渲染结果，主线程只负责挂窗。
+    /// 标记为「仅原生壁纸」的屏不进入结果（不创建覆盖窗）。
     static func prepareOverlayImages(
         config: AppConfig,
         displays: [DisplayInfo]
@@ -131,7 +132,7 @@ enum ImagePipeline {
         var result: [String: NSImage] = [:]
         for display in displays {
             guard let path = config.imagePath(forDisplayID: display.id) else {
-                throw AppError.noImageConfigured
+                continue
             }
             let source = try loadNSImage(
                 path: path,
@@ -150,6 +151,10 @@ enum ImagePipeline {
                 scaleMode: config.scaleMode,
                 fitBackground: bg
             )
+        }
+        if result.isEmpty {
+            // 全部为「仅原生」时允许空结果：不建覆盖窗，但不视为配置错误。
+            return result
         }
         return result
     }

@@ -17,6 +17,8 @@ final class ModeEngine: ObservableObject {
 
     private var lastReport: HealthReport?
     private var runningTask: Task<Void, Never>?
+    private var pendingMessage: String?
+    private var pendingWork: (@MainActor () async throws -> Void)?
 
     init(
         configStore: ConfigStore,
@@ -133,6 +135,28 @@ final class ModeEngine: ObservableObject {
 
     func reapplyCurrentAsync() {
         updateDesktopAsync()
+    }
+
+    /// Sync overlay windows to the current display list without tearing them down first.
+    /// Used after real display changes; avoids the Mission Control flash caused by stop→start.
+    func syncOverlayDisplaysAsync() {
+        enqueue("正在同步底层窗口…") { [weak self] in
+            guard let self else { return }
+            guard self.activeMode == .overlay, self.overlay.isActive else { return }
+            let config = self.configStore.config
+            let displays = self.displayRegistry.displays
+            try self.ensureImagesReady(config: config, displays: displays)
+            let prepared = try await Task.detached(priority: .userInitiated) {
+                try ImagePipeline.prepareOverlayImages(config: config, displays: displays)
+            }.value
+            try self.overlay.applyPreparedImages(
+                config: config,
+                displays: displays,
+                registry: self.displayRegistry,
+                imagesByDisplayID: prepared
+            )
+            self.statusMessage = "已同步底层窗口"
+        }
     }
 
     func applyPreferredMode() async throws {
@@ -267,24 +291,36 @@ final class ModeEngine: ObservableObject {
 
     private func enqueue(_ message: String, work: @escaping @MainActor () async throws -> Void) {
         if isBusy {
-            statusMessage = "正在处理上一次操作，请稍候…"
+            // 合并为最新一次请求，避免「仅原生 → 改用兜底」连点时第二次被丢弃。
+            pendingMessage = message
+            pendingWork = work
+            statusMessage = "将在当前操作完成后继续…"
             return
         }
         isBusy = true
-        statusMessage = message
         lastError = nil
         runningTask = Task { @MainActor in
-            defer {
-                isBusy = false
-                runningTask = nil
-            }
-            do {
-                try await work()
-            } catch {
-                lastError = error.localizedDescription
-                if statusMessage == message {
+            var currentMessage = message
+            var currentWork = work
+            while true {
+                statusMessage = currentMessage
+                lastError = nil
+                do {
+                    try await currentWork()
+                } catch {
+                    lastError = error.localizedDescription
                     statusMessage = "操作失败"
                 }
+                if let next = pendingWork {
+                    currentWork = next
+                    currentMessage = pendingMessage ?? "正在更新到桌面…"
+                    pendingWork = nil
+                    pendingMessage = nil
+                    continue
+                }
+                isBusy = false
+                runningTask = nil
+                break
             }
         }
     }
@@ -313,11 +349,16 @@ final class ModeEngine: ObservableObject {
 
     private func ensureImagesReady(config: AppConfig, displays: [DisplayInfo]) throws {
         if displays.isEmpty { throw AppError.noDisplays }
+        let ids = displays.map(\.id)
+        let hasCoverage = config.hasUsableWallpaperImage(displayIDs: ids)
+        // 允许「已启用但全部仅原生」：仍有图资源，只是当前不覆盖。
+        guard hasCoverage || config.hasWallpaperImageAssets() else {
+            throw AppError.noImageConfigured
+        }
+        guard hasCoverage else { return }
         if config.perDisplayEnabled {
             for display in displays {
-                guard let path = config.imagePath(forDisplayID: display.id) else {
-                    throw AppError.noImageConfigured
-                }
+                guard let path = config.imagePath(forDisplayID: display.id) else { continue }
                 _ = try ImagePipeline.validate(
                     path: path,
                     maxBytes: config.maxImageBytes,
@@ -337,7 +378,8 @@ final class ModeEngine: ObservableObject {
     private func handleDisplaysChanged() {
         guard configStore.config.restoreOnDisplayChange else { return }
         guard activeMode == .overlay, overlay.isActive else { return }
-        reapplyCurrentAsync()
+        // Light sync in place — do not stop→start (that flashes system wallpaper).
+        syncOverlayDisplaysAsync()
     }
 
     private func notifyFallbackIfNeeded(reason: String) {

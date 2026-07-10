@@ -41,6 +41,30 @@ Ink Paper はそのためにあります。
 
 ---
 
+## ダウンロードとインストール
+
+[Releases](https://github.com/suilang/ink-paper/releases) から `.dmg` または `.zip` を入手し、`InkPaper.app` を「アプリケーション」へドラッグします。
+
+現在の配布物は **Apple Developer 署名 / 公証なし** です。初回起動で Gatekeeper にブロックされた場合は、次のいずれかで開けます。
+
+1. **右クリックで開く**：App を右クリック → **開く** → 確認（ダブルクリックしない）。
+2. **システム設定**：「システム設定 → プライバシーとセキュリティ」→ **このまま開く**。
+3. **隔離解除スクリプト**：
+
+```bash
+# 既定は /Applications/InkPaper.app
+curl -fsSL https://raw.githubusercontent.com/suilang/ink-paper/main/scripts/unquarantine.sh | bash
+
+# またはリポジトリ内で実行。App / DMG パスも可
+./scripts/unquarantine.sh
+./scripts/unquarantine.sh /Applications/InkPaper.app
+./scripts/unquarantine.sh ~/Downloads/InkPaper-v0.2.0-macos.dmg
+```
+
+まだブロックされる場合は、手順 1 または 2 を併用してください。
+
+---
+
 ## プロジェクトを開く
 
 ```bash

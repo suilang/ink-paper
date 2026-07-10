@@ -5,9 +5,21 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private static weak var shared: AppDelegate?
     private var fallbackWindow: NSWindow?
+    private var singleInstanceObserver: NSObjectProtocol?
+
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // 必须在 bootstrap 之前：避免第二份进程再铺一层 overlay。
+        if !SingleInstance.acquireOrHandOff() {
+            exit(0)
+        }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Self.shared = self
+
+        singleInstanceObserver = SingleInstance.startListeningForActivation {
+            AppDelegate.openSettings()
+        }
 
         // 菜单栏常驻，不占 Dock。
         NSApp.setActivationPolicy(.accessory)
@@ -28,6 +40,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if let singleInstanceObserver {
+            DistributedNotificationCenter.default().removeObserver(singleInstanceObserver)
+            self.singleInstanceObserver = nil
+        }
         AppServices.shared.modeEngine.shutdown()
     }
 

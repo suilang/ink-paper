@@ -93,10 +93,10 @@ final class SystemWallpaperService {
             throw AppError.systemWallpaperUnavailable(reason: probe.summary)
         }
 
+        var applied = 0
         for display in displays {
-            guard let path = config.imagePath(forDisplayID: display.id) else {
-                throw AppError.noImageConfigured
-            }
+            // 原生-only：跳过，保留系统当前壁纸。
+            guard let path = config.imagePath(forDisplayID: display.id) else { continue }
             _ = try ImagePipeline.validate(
                 path: path,
                 maxBytes: config.maxImageBytes,
@@ -104,6 +104,11 @@ final class SystemWallpaperService {
             )
             guard let screen = registry.screen(forDisplayID: display.id) else { continue }
             try await setDesktopImage(path: path, screen: screen, verify: true)
+            applied += 1
+        }
+        if applied == 0 {
+            // 全部「仅原生」：不改系统壁纸，视为成功。
+            return
         }
     }
 

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. v0.1.0). Leave empty to use CFBundleShortVersionString from Info.plist."
+        description: "Release tag (e.g. v0.2.0). Leave empty to use CFBundleShortVersionString from Info.plist."
         required: false
         default: ""
       draft:
@@ -61,9 +61,11 @@ jobs:
           ditto -c -k --keepParent "$APP" "dist/InkPaper-${{ steps.version.outputs.tag }}-macos.zip"
 
       - name: Create DMG
+        env:
+          SKIP_BUILD: "1"
         run: |
           chmod +x scripts/package-dmg.sh
-          SKIP_BUILD=1 ./scripts/package-dmg.sh
+          ./scripts/package-dmg.sh
 
       - name: Create / update GitHub Release
         uses: softprops/action-gh-release@v2
@@ -83,9 +85,20 @@ jobs:
             | macOS | `InkPaper-*-macos.dmg` |
             | macOS (zip) | `InkPaper-*-macos.zip` |
 
-            ## Unsigned build
+            ## Unsigned build / 未签名说明
 
             This build is **not Apple Developer signed / notarized**.
-            On first open: right-click the app → **Open**, or see System Settings → Privacy & Security.
+
+            If macOS blocks the app on first open:
+
+            1. Right-click `InkPaper.app` → **Open** → confirm
+            2. Or: **System Settings → Privacy & Security → Open Anyway**
+            3. Or clear quarantine:
+
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/suilang/ink-paper/main/scripts/unquarantine.sh | bash
+            ```
+
+            详见 README「下载与安装」。
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

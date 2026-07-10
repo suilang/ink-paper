@@ -1,4 +1,5 @@
 import AppKit
+import CoreGraphics
 import Foundation
 
 /// Borderless desktop-level wallpaper window. Non-activating, click-through.
@@ -50,9 +51,18 @@ final class OverlayImageView: NSView {
 final class OverlayWallpaperService {
     private var windows: [String: OverlayWallpaperWindow] = [:]
     private var imageViews: [String: OverlayImageView] = [:]
+    private var secondaryHiddenForMissionControl = false
+    private let missionControlMonitor = MissionControlMonitor()
+    private weak var displayRegistry: DisplayRegistry?
     private(set) var isActive = false
 
     var activeWindowCount: Int { windows.count }
+
+    init() {
+        missionControlMonitor.onActiveChange = { [weak self] active in
+            self?.handleMissionControlActiveChange(active)
+        }
+    }
 
     func start(
         config: AppConfig,
@@ -62,12 +72,16 @@ final class OverlayWallpaperService {
     ) throws {
         guard !displays.isEmpty else { throw AppError.noDisplays }
         isActive = true
+        displayRegistry = registry
         try applyPreparedImages(
             config: config,
             displays: displays,
             registry: registry,
             imagesByDisplayID: imagesByDisplayID
         )
+        missionControlMonitor.start()
+        // Sync once in case MC is already open when overlay starts.
+        handleMissionControlActiveChange(MissionControlDetector.isActive())
     }
 
     func applyPreparedImages(
@@ -77,6 +91,7 @@ final class OverlayWallpaperService {
         imagesByDisplayID: [String: NSImage]
     ) throws {
         guard isActive else { return }
+        displayRegistry = registry
 
         let activeIDs = Set(displays.map(\.id))
         for id in windows.keys where !activeIDs.contains(id) {
@@ -85,8 +100,10 @@ final class OverlayWallpaperService {
 
         for display in displays {
             guard let screen = registry.screen(forDisplayID: display.id) else { continue }
+            // 无预渲染图 = 该屏仅用原生壁纸：拆掉覆盖窗（若有），不抛错。
             guard let rendered = imagesByDisplayID[display.id] else {
-                throw AppError.noImageConfigured
+                destroyWindow(id: display.id)
+                continue
             }
 
             let window: OverlayWallpaperWindow
@@ -112,11 +129,20 @@ final class OverlayWallpaperService {
 
             view.frame = CGRect(origin: .zero, size: display.frame.size)
             view.image = rendered
-            window.orderBack(nil)
+
+            let isPrimary = display.screenNumber == CGMainDisplayID()
+            if secondaryHiddenForMissionControl, !isPrimary {
+                window.orderOut(nil)
+            } else {
+                window.orderBack(nil)
+            }
         }
     }
 
     func stop() {
+        missionControlMonitor.stop()
+        secondaryHiddenForMissionControl = false
+        displayRegistry = nil
         isActive = false
         for id in Array(windows.keys) {
             destroyWindow(id: id)
@@ -132,5 +158,24 @@ final class OverlayWallpaperService {
 
     func canCreateDesktopLevelWindow() -> Bool {
         true
+    }
+
+    /// Hide secondary-display overlays while Mission Control is open (show real wallpaper).
+    /// Primary display keeps its overlay (already stable / non-flashing there).
+    private func handleMissionControlActiveChange(_ active: Bool) {
+        guard isActive else { return }
+        secondaryHiddenForMissionControl = active
+        let primaryID = CGMainDisplayID()
+        for (id, window) in windows {
+            guard let screenNumber = displayRegistry?.displays.first(where: { $0.id == id })?.screenNumber
+                    ?? UInt32(id) else { continue }
+            let isPrimary = screenNumber == primaryID
+            guard !isPrimary else { continue }
+            if active {
+                window.orderOut(nil)
+            } else {
+                window.orderBack(nil)
+            }
+        }
     }
 }

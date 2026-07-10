@@ -101,6 +101,8 @@ struct AppConfig: Codable, Equatable, Sendable {
     var imagePath: String?
     var perDisplayEnabled: Bool
     var perDisplayMap: [String: String]
+    /// 显式「仅原生壁纸」的显示器；不删 `perDisplayMap` 里的原路径，便于恢复覆盖。
+    var perDisplayNativeIDs: Set<String>
     var scaleMode: ScaleMode
     var fitBackgroundColor: RGBAColor
     var applyToAllSpaces: Bool
@@ -125,7 +127,7 @@ struct AppConfig: Codable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case launchAtLogin, showMenuBarExtra, openConfigOnLaunch, language
         case lastMode, preferredMode, backupSystemWallpaperBeforeSwitch
-        case wallpaperEnabled, imagePath, perDisplayEnabled, perDisplayMap
+        case wallpaperEnabled, imagePath, perDisplayEnabled, perDisplayMap, perDisplayNativeIDs
         case scaleMode, fitBackgroundColor, applyToAllSpaces
         case overlayEnabled, ignoreMouseEvents, restoreOnDisplayChange, hideOnAppQuit
         case checkOnLaunch, autoFallbackToOverlay, notifyOnFallback, lastCheckAt, lastCheckReport
@@ -144,6 +146,7 @@ struct AppConfig: Codable, Equatable, Sendable {
         imagePath: String?,
         perDisplayEnabled: Bool,
         perDisplayMap: [String: String],
+        perDisplayNativeIDs: Set<String>,
         scaleMode: ScaleMode,
         fitBackgroundColor: RGBAColor,
         applyToAllSpaces: Bool,
@@ -170,6 +173,7 @@ struct AppConfig: Codable, Equatable, Sendable {
         self.imagePath = imagePath
         self.perDisplayEnabled = perDisplayEnabled
         self.perDisplayMap = perDisplayMap
+        self.perDisplayNativeIDs = perDisplayNativeIDs
         self.scaleMode = scaleMode
         self.fitBackgroundColor = fitBackgroundColor
         self.applyToAllSpaces = applyToAllSpaces
@@ -202,7 +206,15 @@ struct AppConfig: Codable, Equatable, Sendable {
         wallpaperEnabled = decodedEnabled ?? decodedOverlay
         imagePath = try c.decodeIfPresent(String.self, forKey: .imagePath)
         perDisplayEnabled = try c.decodeIfPresent(Bool.self, forKey: .perDisplayEnabled) ?? defaults.perDisplayEnabled
-        perDisplayMap = try c.decodeIfPresent([String: String].self, forKey: .perDisplayMap) ?? [:]
+        var map = try c.decodeIfPresent([String: String].self, forKey: .perDisplayMap) ?? [:]
+        var nativeIDs = Set(try c.decodeIfPresent([String].self, forKey: .perDisplayNativeIDs) ?? [])
+        // 迁移旧哨兵：空字符串曾表示「仅原生」。
+        for (id, path) in map where path.isEmpty {
+            nativeIDs.insert(id)
+        }
+        map = map.filter { !$0.value.isEmpty }
+        perDisplayMap = map
+        perDisplayNativeIDs = nativeIDs
         scaleMode = try c.decodeIfPresent(ScaleMode.self, forKey: .scaleMode) ?? defaults.scaleMode
         fitBackgroundColor = try c.decodeIfPresent(RGBAColor.self, forKey: .fitBackgroundColor) ?? defaults.fitBackgroundColor
         applyToAllSpaces = try c.decodeIfPresent(Bool.self, forKey: .applyToAllSpaces) ?? defaults.applyToAllSpaces
@@ -231,6 +243,7 @@ struct AppConfig: Codable, Equatable, Sendable {
         imagePath: nil,
         perDisplayEnabled: false,
         perDisplayMap: [:],
+        perDisplayNativeIDs: [],
         scaleMode: .fill,
         fitBackgroundColor: .black,
         applyToAllSpaces: true,
@@ -247,22 +260,39 @@ struct AppConfig: Codable, Equatable, Sendable {
         maxImageDimension: 16384
     )
 
+    /// `perDisplayMap` 只存真实路径；「仅原生」用 `perDisplayNativeIDs`（兼容旧空字符串哨兵）。
+    static let perDisplayNativeSentinel = ""
+
+    /// 分屏开启且该屏显式标记为「仅原生壁纸」。
+    func usesNativeWallpaperOnly(forDisplayID displayID: String) -> Bool {
+        guard perDisplayEnabled else { return false }
+        if perDisplayNativeIDs.contains(displayID) { return true }
+        if let path = perDisplayMap[displayID], path.isEmpty { return true }
+        return false
+    }
+
+    /// 解析该屏实际要用的图片路径；原生-only 返回 `nil`（不覆盖该屏）。
     func imagePath(forDisplayID displayID: String) -> String? {
-        if perDisplayEnabled, let path = perDisplayMap[displayID], !path.isEmpty {
-            return path
+        if perDisplayEnabled {
+            if usesNativeWallpaperOnly(forDisplayID: displayID) { return nil }
+            if let path = perDisplayMap[displayID], !path.isEmpty { return path }
+            return imagePath
         }
         return imagePath
     }
 
-    /// 是否具备至少一张可铺桌面的图（与是否启用无关）。
+    /// 是否至少有一块屏当前会铺到 Ink Paper 图（与是否启用无关）。
     func hasUsableWallpaperImage(displayIDs: [String]) -> Bool {
-        if let imagePath, !imagePath.isEmpty { return true }
         if perDisplayEnabled {
-            return displayIDs.contains { id in
-                if let path = perDisplayMap[id], !path.isEmpty { return true }
-                return false
-            }
+            return displayIDs.contains { imagePath(forDisplayID: $0) != nil }
         }
+        if let imagePath, !imagePath.isEmpty { return true }
         return false
+    }
+
+    /// 是否仍保留可选图资源（含被「仅原生」暂时不用的分屏路径 / 全局图）。
+    func hasWallpaperImageAssets() -> Bool {
+        if let imagePath, !imagePath.isEmpty { return true }
+        return perDisplayMap.values.contains { !$0.isEmpty }
     }
 }

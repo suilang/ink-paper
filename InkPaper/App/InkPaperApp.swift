@@ -48,10 +48,6 @@ struct MenuBarMenuContent: View {
             AppDelegate.openSettings()
         }
         if configStore.config.wallpaperEnabled {
-            Button("更新到桌面…") {
-                modeEngine.updateDesktopAsync()
-            }
-            .disabled(modeEngine.isBusy)
             Button("停用壁纸") {
                 modeEngine.disableWallpaperAsync()
             }

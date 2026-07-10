@@ -41,6 +41,30 @@ Ink Paper is built for that:
 
 ---
 
+## Download & install
+
+Grab a `.dmg` or `.zip` from [Releases](https://github.com/suilang/ink-paper/releases) and drag `InkPaper.app` into Applications.
+
+Current builds are **not Apple Developer signed / notarized**. On first open, Gatekeeper may block the app — use any of these:
+
+1. **Right-click Open**: right-click the app → **Open** → confirm (do not double-click).
+2. **System Settings**: after a blocked open, go to **System Settings → Privacy & Security** → **Open Anyway**.
+3. **Unquarantine script**:
+
+```bash
+# Defaults to /Applications/InkPaper.app
+curl -fsSL https://raw.githubusercontent.com/suilang/ink-paper/main/scripts/unquarantine.sh | bash
+
+# Or run from a clone; optional App / DMG path
+./scripts/unquarantine.sh
+./scripts/unquarantine.sh /Applications/InkPaper.app
+./scripts/unquarantine.sh ~/Downloads/InkPaper-v0.2.0-macos.dmg
+```
+
+If it is still blocked, use step 1 or 2.
+
+---
+
 ## Open the project
 
 ```bash

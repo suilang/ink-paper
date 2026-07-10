@@ -13,15 +13,15 @@ struct SettingsRootView: View {
     @State private var alertMessage: String?
     @State private var previewImage: NSImage?
     @State private var statusBanner: String?
+    @State private var reapplyDebounceTask: Task<Void, Never>?
 
     enum SettingsTab: String, CaseIterable, Identifiable {
-        case wallpaper, mode, displays, general, diagnostics, about
+        case wallpaper, mode, general, diagnostics, about
         var id: String { rawValue }
         var title: String {
             switch self {
             case .wallpaper: return "壁纸"
             case .mode: return "模式"
-            case .displays: return "显示器"
             case .general: return "通用"
             case .diagnostics: return "诊断"
             case .about: return "关于"
@@ -38,7 +38,6 @@ struct SettingsRootView: View {
             TabView(selection: $selectedTab) {
                 wallpaperPage.tabItem { Label("壁纸", systemImage: "photo") }.tag(SettingsTab.wallpaper)
                 modePage.tabItem { Label("模式", systemImage: "switch.2") }.tag(SettingsTab.mode)
-                displaysPage.tabItem { Label("显示器", systemImage: "display.2") }.tag(SettingsTab.displays)
                 generalPage.tabItem { Label("通用", systemImage: "gearshape") }.tag(SettingsTab.general)
                 diagnosticsPage.tabItem { Label("诊断", systemImage: "stethoscope") }.tag(SettingsTab.diagnostics)
                 aboutPage.tabItem { Label("关于", systemImage: "info.circle") }.tag(SettingsTab.about)
@@ -91,7 +90,7 @@ struct SettingsRootView: View {
             } header: {
                 Text("启用")
             } footer: {
-                Text("「选图」只准备资源；「启用壁纸」才决定是否铺到桌面。停用不会删除已选图片。")
+                Text("打开「启用壁纸」后桌面立即生效；之后选图、换图会直接更新桌面。停用不会删除已选图片。")
                     .font(.caption)
             }
 
@@ -102,12 +101,24 @@ struct SettingsRootView: View {
                         get: { configStore.config.perDisplayEnabled },
                         set: { enabled in
                             configStore.update { $0.perDisplayEnabled = enabled }
-                            statusBanner = enabled
-                                ? "已开启分屏：请在下方为每块屏幕选图（可先不启用）"
-                                : "已关闭分屏，将使用全局图片"
+                            if enabled {
+                                statusBanner = "已开启分屏：可为每块屏幕选图，或指定仅用原生壁纸"
+                            } else {
+                                statusBanner = "已关闭分屏，将使用全局图片"
+                            }
+                            reapplyIfEnabled()
                         }
                     )
                 )
+            } footer: {
+                Text("开启后可为每块屏单独选图；也可让某块屏不覆盖，仅保留系统原生壁纸。")
+                    .font(.caption)
+            }
+
+            if let tip = displayRegistry.lastChangeMessage {
+                Section {
+                    Text(tip).foregroundStyle(.orange)
+                }
             }
 
             if configStore.config.perDisplayEnabled {
@@ -119,6 +130,11 @@ struct SettingsRootView: View {
                             displayPickerRow(display)
                         }
                     }
+                    Button("刷新显示器列表") {
+                        displayRegistry.refresh()
+                        statusBanner = "已刷新显示器列表（\(displayRegistry.displays.count) 块）"
+                    }
+                    .disabled(modeEngine.isBusy)
                 }
             }
 
@@ -147,20 +163,14 @@ struct SettingsRootView: View {
                             }
                         }
 
-                        if configStore.config.wallpaperEnabled, canApplyWallpaper {
-                            Button("更新到桌面") {
-                                statusBanner = "正在更新到桌面…"
-                                modeEngine.updateDesktopAsync()
-                            }
-                            .disabled(modeEngine.isBusy)
-                        } else if configStore.config.imagePath != nil, !configStore.config.wallpaperEnabled {
+                        if configStore.config.imagePath != nil, !configStore.config.wallpaperEnabled {
                             Text("已选图，打开上方「启用壁纸」后才会铺到桌面")
                                 .font(.caption2)
                                 .foregroundStyle(.orange)
                         }
 
                         if configStore.config.perDisplayEnabled {
-                            Text("未单独选图的屏幕会使用这张兜底图。")
+                            Text("未单独选图的屏幕会使用这张兜底图；标记为「仅原生」的屏幕不会使用。")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -169,7 +179,17 @@ struct SettingsRootView: View {
             }
 
             Section("缩放") {
-                Picker("策略", selection: binding(\.scaleMode)) {
+                Picker(
+                    "策略",
+                    selection: Binding(
+                        get: { configStore.config.scaleMode },
+                        set: { mode in
+                            configStore.update { $0.scaleMode = mode }
+                            statusBanner = "缩放已改为「\(mode.displayName)」"
+                            reapplyIfEnabled()
+                        }
+                    )
+                ) {
                     ForEach(ScaleMode.allCases) { mode in
                         Text(mode.displayName).tag(mode)
                     }
@@ -184,17 +204,12 @@ struct SettingsRootView: View {
                                 configStore.update {
                                     $0.fitBackgroundColor = RGBAColor(nsColor: NSColor(color))
                                 }
+                                statusBanner = "已更新留边颜色"
+                                reapplyIfEnabled(debounceMilliseconds: 400)
                             }
                         )
                     )
                     .disabled(modeEngine.isBusy)
-                }
-                if configStore.config.wallpaperEnabled {
-                    Button("按当前缩放更新到桌面") {
-                        statusBanner = "正在更新到桌面…"
-                        modeEngine.updateDesktopAsync()
-                    }
-                    .disabled(modeEngine.isBusy || !canApplyWallpaper)
                 }
             }
 
@@ -283,18 +298,23 @@ struct SettingsRootView: View {
 
     private var enableHelpText: String {
         if !canApplyWallpaper {
-            return "先在下方选择图片；选图不会改变桌面。"
+            return "先在下方选择图片；未启用时选图不会改变桌面。"
         }
         if configStore.config.wallpaperEnabled {
-            return "已启用。改图或改缩放后，可点「更新到桌面」。关闭开关即可停用（不必删图）。"
+            return "已启用。选图、换图、改缩放会直接更新桌面。关闭开关即可停用（不必删图）。"
         }
         return "图片已就绪。打开「启用壁纸」后才会铺到桌面。"
     }
 
     private func displayPickerRow(_ display: DisplayInfo) -> some View {
         let path = effectivePath(for: display.id)
+        let isNative = configStore.config.usesNativeWallpaperOnly(forDisplayID: display.id)
+        let hasCustom = {
+            if let p = configStore.config.perDisplayMap[display.id], !p.isEmpty { return true }
+            return false
+        }()
         return HStack(alignment: .top, spacing: 12) {
-            DisplayThumbnail(path: path)
+            DisplayThumbnail(path: isNative ? nil : path, nativeOnly: isNative)
                 .frame(width: 96, height: 64)
 
             VStack(alignment: .leading, spacing: 8) {
@@ -314,6 +334,10 @@ struct SettingsRootView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                Text("ID: \(display.id)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+
                 Text(shortPathLabel(for: display.id))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -325,23 +349,21 @@ struct SettingsRootView: View {
                     }
                     .disabled(modeEngine.isBusy)
 
-                    if configStore.config.perDisplayMap[display.id] != nil {
-                        Button("改用全局图") {
-                            configStore.update { $0.perDisplayMap[display.id] = nil }
-                            statusBanner = "\(display.localizedName) 已改为使用全局图（尚未更新桌面）"
+                    if isNative {
+                        Button("恢复覆盖") {
+                            restoreCoverage(displayID: display.id, displayName: display.localizedName)
                         }
                         .disabled(modeEngine.isBusy)
-
-                        Button("移除", role: .destructive) {
-                            clearDisplayImage(displayID: display.id, displayName: display.localizedName)
+                    } else if hasCustom {
+                        Button("改用兜底图") {
+                            useGlobalFallback(displayID: display.id, displayName: display.localizedName)
                         }
                         .disabled(modeEngine.isBusy)
                     }
 
-                    if configStore.config.wallpaperEnabled, canApplyWallpaper {
-                        Button("更新到桌面") {
-                            statusBanner = "正在更新到桌面…"
-                            modeEngine.updateDesktopAsync()
+                    if !isNative {
+                        Button("仅原生壁纸", role: .destructive) {
+                            setNativeOnly(displayID: display.id, displayName: display.localizedName)
                         }
                         .disabled(modeEngine.isBusy)
                     }
@@ -374,14 +396,24 @@ struct SettingsRootView: View {
     }
 
     private func shortPathLabel(for displayID: String) -> String {
+        if configStore.config.usesNativeWallpaperOnly(forDisplayID: displayID) {
+            if let path = configStore.config.perDisplayMap[displayID], !path.isEmpty {
+                let name = URL(fileURLWithPath: path).lastPathComponent
+                return "仅原生壁纸（已保留分屏图：\(name)）"
+            }
+            if let global = configStore.config.imagePath {
+                return "仅原生壁纸（恢复后可用兜底：\(URL(fileURLWithPath: global).lastPathComponent)）"
+            }
+            return "仅原生壁纸（不覆盖）"
+        }
         if let path = configStore.config.perDisplayMap[displayID], !path.isEmpty {
             let name = URL(fileURLWithPath: path).lastPathComponent
             return configStore.config.wallpaperEnabled ? "已选：\(name)" : "已选：\(name)（尚未启用）"
         }
         if let global = configStore.config.imagePath {
-            return "未单独选图 → 全局：\(URL(fileURLWithPath: global).lastPathComponent)"
+            return "未单独选图 → 兜底：\(URL(fileURLWithPath: global).lastPathComponent)"
         }
-        return "尚未选图"
+        return "尚未选图（也无兜底图）"
     }
 
     @ViewBuilder
@@ -407,15 +439,65 @@ struct SettingsRootView: View {
         if let old { ImagePipeline.invalidate(path: old) }
         previewImage = nil
         statusBanner = "已移除全局图片"
-        autoDisableIfNoImageLeft()
+        if configStore.config.wallpaperEnabled, canApplyWallpaper {
+            reapplyIfEnabled()
+        } else {
+            autoDisableIfNoImageLeft()
+        }
     }
 
-    private func clearDisplayImage(displayID: String, displayName: String) {
+    /// 该屏改回使用全局兜底图（清除分屏图与「仅原生」标记）。
+    private func useGlobalFallback(displayID: String, displayName: String) {
         let old = configStore.config.perDisplayMap[displayID]
-        configStore.update { $0.perDisplayMap.removeValue(forKey: displayID) }
-        if let old { ImagePipeline.invalidate(path: old) }
-        statusBanner = "已移除 \(displayName) 的分屏图片"
-        autoDisableIfNoImageLeft()
+        configStore.update {
+            $0.perDisplayNativeIDs.remove(displayID)
+            $0.perDisplayMap.removeValue(forKey: displayID)
+        }
+        if let old, !old.isEmpty { ImagePipeline.invalidate(path: old) }
+        guard configStore.config.imagePath != nil else {
+            statusBanner = "\(displayName) 已改回兜底，但尚未设置兜底图"
+            alertMessage = "请先在下方选择全局兜底图片"
+            autoDisableIfNoImageLeft()
+            return
+        }
+        statusBanner = "\(displayName) 已改为使用兜底图"
+        applyDesktopAfterConfigChange()
+    }
+
+    /// 取消「仅原生」，恢复该屏覆盖（优先分屏图，否则兜底图）。
+    private func restoreCoverage(displayID: String, displayName: String) {
+        configStore.update {
+            $0.perDisplayNativeIDs.remove(displayID)
+            // 清掉旧空字符串哨兵
+            if let path = $0.perDisplayMap[displayID], path.isEmpty {
+                $0.perDisplayMap.removeValue(forKey: displayID)
+            }
+        }
+        let path = configStore.config.imagePath(forDisplayID: displayID)
+        guard path != nil else {
+            statusBanner = "\(displayName) 已取消仅原生，但没有可铺的图片"
+            alertMessage = "请为该屏选择图片，或先设置全局兜底图"
+            autoDisableIfNoImageLeft()
+            return
+        }
+        statusBanner = "\(displayName) 已恢复覆盖"
+        applyDesktopAfterConfigChange()
+    }
+
+    /// 该屏不铺 Ink Paper，仅保留系统原生壁纸；保留已选分屏路径以便恢复。
+    private func setNativeOnly(displayID: String, displayName: String) {
+        configStore.update {
+            $0.perDisplayNativeIDs.insert(displayID)
+            // 清掉旧空字符串哨兵，避免与 nativeIDs 重复语义
+            if let path = $0.perDisplayMap[displayID], path.isEmpty {
+                $0.perDisplayMap.removeValue(forKey: displayID)
+            }
+        }
+        statusBanner = "\(displayName) 已设为仅原生壁纸（不覆盖）"
+        if configStore.config.wallpaperEnabled {
+            // 即使当前已无任何覆盖屏，也要重铺以拆掉该屏窗口；不因此自动停用。
+            modeEngine.updateDesktopAsync()
+        }
     }
 
     private func clearAllImages() {
@@ -424,22 +506,58 @@ struct SettingsRootView: View {
         configStore.update {
             $0.imagePath = nil
             $0.perDisplayMap = [:]
+            $0.perDisplayNativeIDs = []
         }
         ImagePipeline.invalidateCache()
         if let oldGlobal { ImagePipeline.invalidate(path: oldGlobal) }
-        for path in oldMap.values { ImagePipeline.invalidate(path: path) }
+        for path in oldMap.values where !path.isEmpty { ImagePipeline.invalidate(path: path) }
         previewImage = nil
         statusBanner = "已清除全部已选壁纸"
         autoDisableIfNoImageLeft(force: true)
     }
 
     private func autoDisableIfNoImageLeft(force: Bool = false) {
-        let noImage = force || !canApplyWallpaper
-        guard noImage else { return }
+        let noAssets = force || !configStore.config.hasWallpaperImageAssets()
+        guard noAssets else { return }
         if configStore.config.wallpaperEnabled || modeEngine.overlay.isActive || modeEngine.activeMode != nil {
             modeEngine.disableWallpaperAsync()
             statusBanner = (statusBanner ?? "") + "；已自动停用"
         }
+    }
+
+    /// 配置变更后：已启用则重铺；未启用但已有可铺图则保持未启用（由用户开开关）。
+    private func applyDesktopAfterConfigChange() {
+        if configStore.config.wallpaperEnabled {
+            if canApplyWallpaper {
+                modeEngine.updateDesktopAsync()
+            } else if configStore.config.hasWallpaperImageAssets() {
+                // 仍启用但暂时全原生等：同步拆窗/重铺
+                modeEngine.updateDesktopAsync()
+            } else {
+                autoDisableIfNoImageLeft()
+            }
+        } else if canApplyWallpaper {
+            // 若先前因全原生被误停用，恢复覆盖时应重新启用
+            statusBanner = (statusBanner ?? "") + "，正在重新启用…"
+            modeEngine.enableWallpaperAsync()
+        }
+    }
+
+    /// 已启用时把当前配置立刻重铺到桌面（选图/换图/改缩放等直接生效）。
+    private func reapplyIfEnabled(debounceMilliseconds: UInt64 = 0) {
+        guard configStore.config.wallpaperEnabled else { return }
+        guard canApplyWallpaper || configStore.config.hasWallpaperImageAssets() else { return }
+        if debounceMilliseconds > 0 {
+            reapplyDebounceTask?.cancel()
+            reapplyDebounceTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: debounceMilliseconds * 1_000_000)
+                guard !Task.isCancelled else { return }
+                guard configStore.config.wallpaperEnabled else { return }
+                modeEngine.updateDesktopAsync()
+            }
+            return
+        }
+        modeEngine.updateDesktopAsync()
     }
 
     // MARK: - Mode
@@ -523,100 +641,6 @@ struct SettingsRootView: View {
                     }
                     .disabled(modeEngine.isBusy)
                 }
-            }
-        }
-        .formStyle(.grouped)
-        .padding(8)
-    }
-
-    // MARK: - Displays
-
-    private var displaysPage: some View {
-        Form {
-            if !configStore.config.perDisplayEnabled {
-                Section {
-                    Text("当前未开启「按显示器分别设置」。打开下方开关，或回壁纸页开启。")
-                        .foregroundStyle(.secondary)
-                    Toggle(
-                        "启用分屏设置",
-                        isOn: Binding(
-                            get: { configStore.config.perDisplayEnabled },
-                            set: { enabled in
-                                configStore.update { $0.perDisplayEnabled = enabled }
-                                statusBanner = enabled ? "已启用分屏，可为每块屏幕选择图片" : "已关闭分屏"
-                            }
-                        )
-                    )
-                }
-            }
-
-            if let tip = displayRegistry.lastChangeMessage {
-                Section {
-                    Text(tip).foregroundStyle(.orange)
-                }
-            }
-
-            Section("显示器") {
-                ForEach(displayRegistry.displays) { display in
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text(display.localizedName).font(.headline)
-                            if display.isMain {
-                                Text("主屏")
-                                    .font(.caption)
-                                    .padding(.horizontal, 6)
-                                    .background(.quaternary)
-                                    .clipShape(Capsule())
-                            }
-                            Spacer()
-                            Text(display.resolutionDescription).foregroundStyle(.secondary)
-                        }
-                        Text("ID: \(display.id)").font(.caption2).foregroundStyle(.secondary)
-                        Text(displayImageDescription(for: display.id))
-                            .font(.caption)
-                            .lineLimit(2)
-                        HStack {
-                            Button("选择图片…") {
-                                pickImage(for: display.id)
-                            }
-                            .disabled(modeEngine.isBusy)
-
-                            Button("使用全局图") {
-                                configStore.update { $0.perDisplayMap[display.id] = nil }
-                                statusBanner = "\(display.localizedName) 将使用全局图"
-                            }
-                            .disabled(modeEngine.isBusy)
-
-                            Button("清除", role: .destructive) {
-                                configStore.update { $0.perDisplayMap.removeValue(forKey: display.id) }
-                                statusBanner = "已清除 \(display.localizedName) 的分屏图片"
-                            }
-                            .disabled(modeEngine.isBusy)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-
-            Section {
-                Button("刷新显示器列表") {
-                    displayRegistry.refresh()
-                    statusBanner = "已刷新显示器列表（\(displayRegistry.displays.count) 块）"
-                }
-                if configStore.config.wallpaperEnabled {
-                    Button("更新分屏配置到桌面") {
-                        statusBanner = "正在更新到桌面…"
-                        modeEngine.updateDesktopAsync()
-                    }
-                    .disabled(modeEngine.isBusy || !canApplyWallpaper)
-                } else {
-                    Text("选图后请到「壁纸」页打开「启用壁纸」。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } footer: {
-                Text("主路径在「壁纸」页：选图与启用分离；本页用于查看/调整分屏映射。")
-                    .font(.caption)
             }
         }
         .formStyle(.grouped)
@@ -722,20 +746,80 @@ struct SettingsRootView: View {
     // MARK: - About
 
     private var aboutPage: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Ink Paper").font(.largeTitle.bold())
-            Text("macOS 静态壁纸工具")
-            Text("版本 \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0")")
-                .foregroundStyle(.secondary)
-            Text("构建 \(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1")")
-                .foregroundStyle(.secondary)
-            Text("支持 macOS 13+ · Swift + AppKit/SwiftUI")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+
+        return ScrollView {
+            VStack(spacing: 20) {
+                VStack(spacing: 10) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 88, height: 88)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+
+                    Text("Ink Paper")
+                        .font(.title.bold())
+
+                    Text("macOS 静态壁纸工具")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+
+                    Text("版本 \(version)（\(build)）· 支持 macOS 13+")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+
+                Form {
+                    Section {
+                        LabeledContent("开源协议", value: "MIT License")
+                        LabeledContent("项目主页") {
+                            Link("github.com/suilang/ink-paper", destination: URL(string: "https://github.com/suilang/ink-paper")!)
+                        }
+                    } header: {
+                        Text("信息")
+                    }
+
+                    Section {
+                        VStack(spacing: 12) {
+                            Text("如果本项目对您有帮助，欢迎请作者喝杯奶茶。")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
+
+                            Image("WeChatPay")
+                                .resizable()
+                                .interpolation(.high)
+                                .scaledToFit()
+                                .frame(width: 200, height: 196)
+                                .background(Color.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                                )
+                                .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
+                                .accessibilityLabel("微信赞赏码")
+
+                            Text("微信扫码赞赏 · 仅用于本项目维护与开发")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+                    } header: {
+                        Text("赞助")
+                    }
+                }
+                .formStyle(.grouped)
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 16)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(24)
     }
 
     // MARK: - Helpers
@@ -745,16 +829,6 @@ struct SettingsRootView: View {
             get: { configStore.config[keyPath: keyPath] },
             set: { value in configStore.update { $0[keyPath: keyPath] = value } }
         )
-    }
-
-    private func displayImageDescription(for displayID: String) -> String {
-        if let path = configStore.config.perDisplayMap[displayID], !path.isEmpty {
-            return path
-        }
-        if configStore.config.perDisplayEnabled {
-            return configStore.config.imagePath.map { "回退全局图：\($0)" } ?? "未设置（也无全局图）"
-        }
-        return configStore.config.imagePath.map { "使用全局图：\($0)" } ?? "未设置"
     }
 
     private func reloadPreview() {
@@ -781,7 +855,8 @@ struct SettingsRootView: View {
             reloadPreview()
             let name = url.lastPathComponent
             if configStore.config.wallpaperEnabled {
-                statusBanner = "已选择「\(name)」。可点「更新到桌面」"
+                statusBanner = "已选择「\(name)」，正在应用到桌面…"
+                reapplyIfEnabled()
             } else {
                 statusBanner = "已选择「\(name)」（尚未启用）"
             }
@@ -794,10 +869,12 @@ struct SettingsRootView: View {
             configStore.update {
                 $0.perDisplayEnabled = true
                 $0.perDisplayMap[displayID] = url.path
+                $0.perDisplayNativeIDs.remove(displayID)
             }
             ImagePipeline.invalidate(path: url.path)
             if configStore.config.wallpaperEnabled {
-                statusBanner = "已为\(name)选择「\(url.lastPathComponent)」。可点行内「更新到桌面」"
+                statusBanner = "已为\(name)选择「\(url.lastPathComponent)」，正在应用到桌面…"
+                reapplyIfEnabled()
             } else {
                 statusBanner = "已为\(name)选择「\(url.lastPathComponent)」（尚未启用）"
             }
@@ -827,11 +904,16 @@ struct SettingsRootView: View {
 
 private struct DisplayThumbnail: View {
     let path: String?
+    var nativeOnly: Bool = false
     @State private var image: NSImage?
 
     var body: some View {
         Group {
-            if let image {
+            if nativeOnly {
+                Text("原生")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            } else if let image {
                 Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -847,9 +929,16 @@ private struct DisplayThumbnail: View {
         .clipped()
         .onAppear { load() }
         .onChange(of: path) { _ in load() }
+        .onChange(of: nativeOnly) { _ in
+            if nativeOnly { image = nil }
+        }
     }
 
     private func load() {
+        if nativeOnly {
+            image = nil
+            return
+        }
         guard let path else {
             image = nil
             return

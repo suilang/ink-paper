@@ -30,7 +30,8 @@
 | `lastMode` | `system` | 上次成功应用的模式 |
 | `imagePath` | `nil` | 全局图片路径（选图，不直接等于启用） |
 | `perDisplayEnabled` | `false` | 分屏独立图片 |
-| `perDisplayMap` | `{}` | `displayID → path` |
+| `perDisplayMap` | `{}` | `displayID → path`（仅真实路径） |
+| `perDisplayNativeIDs` | `[]` | 显式「仅原生」的显示器集合；不删 map 中原路径 |
 | `scaleMode` | `fill` | fill / fit / stretch / center |
 | `fitBackgroundColor` | 黑 | fit 留边色 |
 | `applyToAllSpaces` | `true` | overlay 是否 `canJoinAllSpaces` |
@@ -43,12 +44,19 @@
 
 ## 分屏路径解析
 
-`AppConfig.imagePath(forDisplayID:)`：
+`AppConfig.imagePath(forDisplayID:)`（仅当 `perDisplayEnabled`）：
 
-1. 若 `perDisplayEnabled` 且 map 中有非空路径 → 用分屏路径
-2. 否则 → 全局 `imagePath`
+1. 在 `perDisplayNativeIDs` 中（或旧配置空字符串哨兵）→ `nil`（该屏不覆盖）  
+2. map 中有非空路径 → 用分屏路径  
+3. 键不存在 → 全局 `imagePath`
 
-`hasUsableWallpaperImage(displayIDs:)`：是否至少有一张可铺的图（与 `wallpaperEnabled` 无关）。
+`usesNativeWallpaperOnly(forDisplayID:)`：分屏开启且在 native 集合中。
+
+`hasUsableWallpaperImage(displayIDs:)`：至少有一块屏当前能解析出非空路径。
+
+`hasWallpaperImageAssets()`：仍有全局图或非空分屏路径（含被仅原生暂时不用的路径）；用于判断是否该自动停用。
+
+解码时会把旧的 `perDisplayMap[id] = ""` 迁入 `perDisplayNativeIDs` 并清掉空串。
 
 ## 配置迁移
 

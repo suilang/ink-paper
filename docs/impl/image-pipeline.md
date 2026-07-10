@@ -19,7 +19,7 @@
 
 ## Overlay 渲染
 
-- `prepareOverlayImages`：按屏解码 + 缩放，供 `Task.detached` 后台调用
+- `prepareOverlayImages`：按屏解码 + 缩放，供 `Task.detached` 后台调用；跳过无路径的屏（仅原生）；全部跳过则抛错
 - `renderedImage`：用 `NSBitmapImageRep` 离屏绘制（避免 `lockFocus` 主线程卡顿）
 - 主线程 `OverlayWallpaperService` 只接收已渲染的 `NSImage` 并挂到窗口
 

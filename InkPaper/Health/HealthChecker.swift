@@ -366,20 +366,38 @@ final class HealthChecker {
         appendResourceChecks(prefix: "R", path: config.imagePath)
 
         if config.perDisplayEnabled {
+            var covered = 0
+            var nativeOnly: [String] = []
             var missing: [String] = []
             for display in displays {
-                let path = config.imagePath(forDisplayID: display.id)
-                if path == nil {
+                if config.usesNativeWallpaperOnly(forDisplayID: display.id) {
+                    nativeOnly.append(display.localizedName)
+                } else if config.imagePath(forDisplayID: display.id) != nil {
+                    covered += 1
+                } else {
                     missing.append(display.localizedName)
                 }
+            }
+            let detailParts: [String] = [
+                covered > 0 ? "覆盖 \(covered) 屏" : nil,
+                nativeOnly.isEmpty ? nil : "原生 \(nativeOnly.joined(separator: ", "))",
+                missing.isEmpty ? nil : "缺图 \(missing.joined(separator: ", "))"
+            ].compactMap { $0 }
+            let severity: CheckSeverity
+            if covered == 0 {
+                severity = .fail
+            } else if missing.isEmpty {
+                severity = .pass
+            } else {
+                severity = .fail
             }
             items.append(
                 CheckItemResult(
                     id: "R05",
                     group: "资源",
                     title: "分屏图片完整性",
-                    severity: missing.isEmpty ? .pass : .fail,
-                    detail: missing.isEmpty ? "每屏均有图或可回退全局图" : "缺少：\(missing.joined(separator: ", "))"
+                    severity: severity,
+                    detail: detailParts.isEmpty ? "无可用分屏配置" : detailParts.joined(separator: "；")
                 )
             )
         } else {

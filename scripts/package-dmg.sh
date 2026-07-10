@@ -12,6 +12,13 @@ DERIVED_DATA="${DERIVED_DATA:-.derivedData}"
 BACKGROUND_SRC="${BACKGROUND_SRC:-packaging/dmg/background.tiff}"
 BACKGROUND_NAME="$(basename "$BACKGROUND_SRC")"
 
+# Only skip Finder layout when explicitly requested. (Do not infer from CI=true —
+# that drops the custom background/icon layout from the DMG.)
+SKIP_FINDER_LAYOUT="${SKIP_FINDER_LAYOUT:-0}"
+if [[ "${FORCE_FINDER_LAYOUT:-}" == "1" || "${FORCE_FINDER_LAYOUT:-}" == "true" ]]; then
+  SKIP_FINDER_LAYOUT=0
+fi
+
 VER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' InkPaper/Resources/Info.plist)"
 TAG="v${VER}"
 APP_NAME="InkPaper.app"
@@ -101,9 +108,12 @@ if [[ ! -d "$VOL" ]]; then
 fi
 MOUNTED="$VOL"
 
-echo "==> Applying Finder layout…"
-sleep 1
-osascript <<EOF
+if [[ "$SKIP_FINDER_LAYOUT" == "1" || "$SKIP_FINDER_LAYOUT" == "true" ]]; then
+  echo "==> Skipping Finder layout (CI/headless; no volume window)…"
+else
+  echo "==> Applying Finder layout…"
+  sleep 1
+  osascript <<EOF
 tell application "Finder"
   tell disk "$VOLUME_NAME"
     open
@@ -127,17 +137,42 @@ tell application "Finder"
   end tell
 end tell
 EOF
+fi
 
 sync
 sleep 1
 
 echo "==> Detaching…"
-hdiutil detach "$VOL" -quiet
-MOUNTED=""
+# Retry detach — volume can stay busy briefly after attach.
+for _ in $(seq 1 10); do
+  if hdiutil detach "$VOL" -quiet 2>/dev/null; then
+    MOUNTED=""
+    break
+  fi
+  sleep 0.5
+done
+if [[ -n "$MOUNTED" ]]; then
+  hdiutil detach "$VOL" -force -quiet || true
+  MOUNTED=""
+fi
+sleep 1
 
 echo "==> Compressing…"
 rm -f "$FINAL_DMG"
-hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$FINAL_DMG" >/dev/null
+# Retry convert if the RW image is briefly locked after detach.
+convert_ok=0
+for _ in $(seq 1 8); do
+  if hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$FINAL_DMG" >/dev/null 2>/tmp/inkpaper-dmg-convert.err; then
+    convert_ok=1
+    break
+  fi
+  sleep 0.5
+done
+if [[ "$convert_ok" != "1" ]]; then
+  cat /tmp/inkpaper-dmg-convert.err >&2 || true
+  echo "error: hdiutil convert failed" >&2
+  exit 1
+fi
 xattr -cr "$FINAL_DMG" 2>/dev/null || true
 
 echo "==> Done: $ROOT/$FINAL_DMG"
