@@ -23,6 +23,7 @@
 		B5EED461594F442FB38256A5 /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52863F871CA6419ABB885641 /* AppError.swift */; };
 		87DCC2DAD2614015AD98EC96 /* AppNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0929B50FB975433787E9418D /* AppNotifier.swift */; };
 		B7FAF4FD364D45F8A9DB6844 /* SystemWallpaperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA9CCDE88180428082164352 /* SystemWallpaperService.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A69788796A5B4C /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +46,7 @@
 		0929B50FB975433787E9418D /* AppNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotifier.swift; sourceTree = "<group>"; };
 		BA9CCDE88180428082164352 /* SystemWallpaperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemWallpaperService.swift; sourceTree = "<group>"; };
 		0B229D464E9C464E9890919B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		F1E2D3C4B5A69788796A5B4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +176,7 @@
 		C423F962E99146E7822F700F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				F1E2D3C4B5A69788796A5B4C /* Assets.xcassets */,
 				0B229D464E9C464E9890919B /* Info.plist */,
 			);
 			path = Resources;
@@ -259,6 +262,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F60718293A4B5C /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -332,6 +336,7 @@
 		534F074E44AA40A9AFF4B087 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -354,6 +359,7 @@
 		61E354C1DC334FAEAC1AF710 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;

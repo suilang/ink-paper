@@ -62,13 +62,8 @@ jobs:
 
       - name: Create DMG
         run: |
-          APP=".derivedData/Build/Products/Release/InkPaper.app"
-          STAGE="$(mktemp -d)"
-          DMG="dist/InkPaper-${{ steps.version.outputs.tag }}-macos.dmg"
-          cp -R "$APP" "$STAGE/"
-          ln -s /Applications "$STAGE/Applications"
-          hdiutil create -volname "Ink Paper" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
-          rm -rf "$STAGE"
+          chmod +x scripts/package-dmg.sh
+          SKIP_BUILD=1 ./scripts/package-dmg.sh
 
       - name: Create / update GitHub Release
         uses: softprops/action-gh-release@v2
