@@ -28,15 +28,24 @@
 - `stop` / 退出：停监视并销毁全部窗口
 - 屏变：`ModeEngine.syncOverlayDisplaysAsync()` 原地同步
 
-## 副屏 × Mission Control
+## 副屏 × Mission Control（已知限制）
 
-外接屏在任务中心合成时容易短暂露出 Dock 真壁纸。策略改为：
+外接屏在任务中心合成时，底层窗口壁纸仍可能**闪一下**。这是 macOS 多屏合成 Mission Control 时的系统行为，**目前无可靠解法**（应用层藏窗等只能缓解部分场景，不能消除）。
+
+**对外说明 / 用户规避（产品支持按显示器分别设置）：**
+
+- 仅设置内屏，外接屏不铺 overlay；或  
+- 仅使用外接显示器（合盖 / 只给外屏设图），避免内屏与外接同时 overlay  
+
+系统壁纸模式不受影响。
+
+实现上仍保留监视与副屏 `orderOut` / `orderBack` 尝试：
 
 1. 轮询检测 Dock 的 **layer=18 全屏窗**（任务中心开启时出现；平时没有；layer=20 不可靠）
-2. 进入任务中心：对 **非主屏**（`CGMainDisplayID()`）overlay 执行 `orderOut`（不销毁）→ 稳定显示原始壁纸
-3. 退出任务中心：再 `orderBack` 盖回
+2. 进入任务中心：对 **非主屏**（`CGMainDisplayID()`）overlay 执行 `orderOut`（不销毁）
+3. 退出任务中心：再 `orderBack` 盖回  
 
-主屏保持原样（不藏）。
+主屏保持原样（不藏）。即使用户仍可能看到闪烁，公开文档以「系统限制 + 分屏规避」为准。
 
 ## 左右滑 Space 为何也会闪
 

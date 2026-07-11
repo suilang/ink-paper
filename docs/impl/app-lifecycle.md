@@ -57,3 +57,4 @@ Xcode Debug 与已安装包若 Bundle ID 相同，也会互斥。
 
 - 未启用 App Sandbox
 - 旧 `MenuBarController` 已空壳化，主路径为 `MenuBarExtra`
+- **外接屏 + Mission Control**：底层窗口模式壁纸可能闪烁（系统合成限制，目前无解）；建议仅内屏或仅外接，详见 [overlay-wallpaper.md](./overlay-wallpaper.md)

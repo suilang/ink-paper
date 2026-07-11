@@ -77,6 +77,19 @@ Sponsorships are used only for maintaining and developing this project.
 
 ---
 
+## Known limitations
+
+**With an external display, overlay wallpaper may flicker when entering Mission Control.** This comes from how macOS composites Mission Control across multiple screens; there is no reliable app-level fix yet.
+
+Workarounds (per-display wallpapers are supported):
+
+- **Built-in display only** — leave the external display without an overlay; or
+- **External display(s) only** — lid closed or only set images on the external screen(s), so built-in and external are not both using overlay at once
+
+System wallpaper mode is unaffected; the flicker mainly shows up in overlay fallback when built-in and external displays are covered together.
+
+---
+
 ## Open the project
 
 ```bash
