@@ -15,6 +15,7 @@
 | [image-pipeline.md](./image-pipeline.md) | 图片校验、解码、缩放 |
 | [health-checker.md](./health-checker.md) | 检查项 ID 与报告 |
 | [settings-ui.md](./settings-ui.md) | 设置页与菜单栏 |
+| [stand-reminder.md](./stand-reminder.md) | 活动提醒：调度引擎、提示窗、主题色、文案 |
 | [app-lifecycle.md](./app-lifecycle.md) | AppDelegate、激活策略、登录项 |
 
 ## 工程入口

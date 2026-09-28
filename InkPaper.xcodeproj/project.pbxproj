@@ -22,9 +22,21 @@
 		C8E4A1B2093D4F6A8B7C5D4E /* MissionControlMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9F0E1A2B3C4456789ABCDEF /* MissionControlMonitor.swift */; };
 		88E2917B29824A6BBFFD1738 /* SettingsRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FC290CFEFBD4B5C8C47B8A5 /* SettingsRootView.swift */; };
 		4BBB356441914290ADD1FE72 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C59EA940F04433C9FD74F3F /* SettingsWindowController.swift */; };
+		A1B2000100000001AA000001 /* SettingsSharedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2000100000001AA000002 /* SettingsSharedState.swift */; };
+		A1B2000200000001AA000001 /* DisplayThumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2000200000001AA000002 /* DisplayThumbnail.swift */; };
+		A1B2000300000001AA000001 /* WallpaperModePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2000300000001AA000002 /* WallpaperModePage.swift */; };
+		A1B2000400000001AA000001 /* GeneralPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2000400000001AA000002 /* GeneralPage.swift */; };
+		A1B2000500000001AA000001 /* DiagnosticsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2000500000001AA000002 /* DiagnosticsPage.swift */; };
+		A1B2000600000001AA000001 /* AboutPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2000600000001AA000002 /* AboutPage.swift */; };
+		A1B2000700000001AA000001 /* ReminderPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2000700000001AA000002 /* ReminderPage.swift */; };
 		B5EED461594F442FB38256A5 /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52863F871CA6419ABB885641 /* AppError.swift */; };
 		87DCC2DAD2614015AD98EC96 /* AppNotifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0929B50FB975433787E9418D /* AppNotifier.swift */; };
 		B7FAF4FD364D45F8A9DB6844 /* SystemWallpaperService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA9CCDE88180428082164352 /* SystemWallpaperService.swift */; };
+		A1B3000100000001AA000001 /* ActivityTips.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B3000100000001AA000002 /* ActivityTips.swift */; };
+		A1B3000200000001AA000001 /* ReminderTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B3000200000001AA000002 /* ReminderTheme.swift */; };
+		A1B3000300000001AA000001 /* StandReminderWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B3000300000001AA000002 /* StandReminderWindow.swift */; };
+		A1B3000400000001AA000001 /* StandReminderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B3000400000001AA000002 /* StandReminderView.swift */; };
+		A1B3000500000001AA000001 /* StandReminderEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B3000500000001AA000002 /* StandReminderEngine.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A69788796A5B4C /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -46,9 +58,21 @@
 		D9F0E1A2B3C4456789ABCDEF /* MissionControlMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionControlMonitor.swift; sourceTree = "<group>"; };
 		3FC290CFEFBD4B5C8C47B8A5 /* SettingsRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootView.swift; sourceTree = "<group>"; };
 		8C59EA940F04433C9FD74F3F /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		A1B2000100000001AA000002 /* SettingsSharedState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSharedState.swift; sourceTree = "<group>"; };
+		A1B2000200000001AA000002 /* DisplayThumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayThumbnail.swift; sourceTree = "<group>"; };
+		A1B2000300000001AA000002 /* WallpaperModePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WallpaperModePage.swift; sourceTree = "<group>"; };
+		A1B2000400000001AA000002 /* GeneralPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralPage.swift; sourceTree = "<group>"; };
+		A1B2000500000001AA000002 /* DiagnosticsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsPage.swift; sourceTree = "<group>"; };
+		A1B2000600000001AA000002 /* AboutPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutPage.swift; sourceTree = "<group>"; };
+		A1B2000700000001AA000002 /* ReminderPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderPage.swift; sourceTree = "<group>"; };
 		52863F871CA6419ABB885641 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		0929B50FB975433787E9418D /* AppNotifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotifier.swift; sourceTree = "<group>"; };
 		BA9CCDE88180428082164352 /* SystemWallpaperService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemWallpaperService.swift; sourceTree = "<group>"; };
+		A1B3000100000001AA000002 /* ActivityTips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityTips.swift; sourceTree = "<group>"; };
+		A1B3000200000001AA000002 /* ReminderTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderTheme.swift; sourceTree = "<group>"; };
+		A1B3000300000001AA000002 /* StandReminderWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StandReminderWindow.swift; sourceTree = "<group>"; };
+		A1B3000400000001AA000002 /* StandReminderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StandReminderView.swift; sourceTree = "<group>"; };
+		A1B3000500000001AA000002 /* StandReminderEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StandReminderEngine.swift; sourceTree = "<group>"; };
 		0B229D464E9C464E9890919B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F1E2D3C4B5A69788796A5B4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -92,6 +116,7 @@
 				CE2488D8C5514CFBAC6D090F /* Overlay */,
 				C423F962E99146E7822F700F /* Resources */,
 				327DB4989C9848D4BD4B0317 /* Settings */,
+				A1B3000600000001AA000003 /* StandReminder */,
 				BA1FF001F40A43ABAA58DEEA /* Support */,
 				40EDC8B3397C4A37B38229E7 /* SystemWallpaper */,
 			);
@@ -110,6 +135,7 @@
 				CE2488D8C5514CFBAC6D090F /* Overlay */,
 				C423F962E99146E7822F700F /* Resources */,
 				327DB4989C9848D4BD4B0317 /* Settings */,
+				A1B3000600000001AA000003 /* StandReminder */,
 				BA1FF001F40A43ABAA58DEEA /* Support */,
 				40EDC8B3397C4A37B38229E7 /* SystemWallpaper */,
 			);
@@ -193,8 +219,31 @@
 			children = (
 				3FC290CFEFBD4B5C8C47B8A5 /* SettingsRootView.swift */,
 				8C59EA940F04433C9FD74F3F /* SettingsWindowController.swift */,
+				A1B2000100000001AA000002 /* SettingsSharedState.swift */,
+				A1B2000800000001AA000003 /* Components */,
+				A1B2000900000001AA000003 /* Pages */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		A1B2000800000001AA000003 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2000200000001AA000002 /* DisplayThumbnail.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		A1B2000900000001AA000003 /* Pages */ = {
+			isa = PBXGroup;
+			children = (
+				A1B2000300000001AA000002 /* WallpaperModePage.swift */,
+				A1B2000400000001AA000002 /* GeneralPage.swift */,
+				A1B2000500000001AA000002 /* DiagnosticsPage.swift */,
+				A1B2000700000001AA000002 /* ReminderPage.swift */,
+				A1B2000600000001AA000002 /* AboutPage.swift */,
+			);
+			path = Pages;
 			sourceTree = "<group>";
 		};
 		BA1FF001F40A43ABAA58DEEA /* Support */ = {
@@ -212,6 +261,18 @@
 				BA9CCDE88180428082164352 /* SystemWallpaperService.swift */,
 			);
 			path = SystemWallpaper;
+			sourceTree = "<group>";
+		};
+		A1B3000600000001AA000003 /* StandReminder */ = {
+			isa = PBXGroup;
+			children = (
+				A1B3000100000001AA000002 /* ActivityTips.swift */,
+				A1B3000200000001AA000002 /* ReminderTheme.swift */,
+				A1B3000500000001AA000002 /* StandReminderEngine.swift */,
+				A1B3000300000001AA000002 /* StandReminderWindow.swift */,
+				A1B3000400000001AA000002 /* StandReminderView.swift */,
+			);
+			path = StandReminder;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -295,9 +356,21 @@
 				C8E4A1B2093D4F6A8B7C5D4E /* MissionControlMonitor.swift in Sources */,
 				88E2917B29824A6BBFFD1738 /* SettingsRootView.swift in Sources */,
 				4BBB356441914290ADD1FE72 /* SettingsWindowController.swift in Sources */,
+				A1B2000100000001AA000001 /* SettingsSharedState.swift in Sources */,
+				A1B2000200000001AA000001 /* DisplayThumbnail.swift in Sources */,
+				A1B2000300000001AA000001 /* WallpaperModePage.swift in Sources */,
+				A1B2000400000001AA000001 /* GeneralPage.swift in Sources */,
+				A1B2000500000001AA000001 /* DiagnosticsPage.swift in Sources */,
+				A1B2000600000001AA000001 /* AboutPage.swift in Sources */,
+				A1B2000700000001AA000001 /* ReminderPage.swift in Sources */,
 				B5EED461594F442FB38256A5 /* AppError.swift in Sources */,
 				87DCC2DAD2614015AD98EC96 /* AppNotifier.swift in Sources */,
 				B7FAF4FD364D45F8A9DB6844 /* SystemWallpaperService.swift in Sources */,
+				A1B3000100000001AA000001 /* ActivityTips.swift in Sources */,
+				A1B3000200000001AA000001 /* ReminderTheme.swift in Sources */,
+				A1B3000300000001AA000001 /* StandReminderWindow.swift in Sources */,
+				A1B3000400000001AA000001 /* StandReminderView.swift in Sources */,
+				A1B3000500000001AA000001 /* StandReminderEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

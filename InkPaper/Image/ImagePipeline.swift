@@ -13,9 +13,17 @@ struct ValidatedImage: Sendable {
 enum ImagePipeline {
     static let allowedContentTypes: [UTType] = [.jpeg, .png, .heic, .tiff, .bmp, .webP, .gif]
 
-    private static let cacheQueue = DispatchQueue(label: "com.ink.InkPaper.imageCache")
-    private static var memoryCache: [String: NSImage] = [:]
-    private static var thumbnailCache: [String: NSImage] = [:]
+    /// 线程安全的图片缓存。NSCache 自带锁，读写可在任意线程同步调用而不阻塞主线程
+    /// （与旧 `cacheQueue.sync` 相比，避免「Task.detached 缩略图加载 × N + 主线程 invalidate」
+    /// 抢同一把串行锁导致的切 Tab 卡死）。
+    private static let memoryCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 64
+        return cache
+    }()
+
+    /// 缩略图缓存键前缀，便于按路径失效。
+    private static let thumbnailKeyPrefix = "thumb:"
 
     static func validate(path: String, maxBytes: Int64, maxDimension: Int) throws -> ValidatedImage {
         let url = URL(fileURLWithPath: path)
@@ -48,21 +56,21 @@ enum ImagePipeline {
     }
 
     static func loadNSImage(path: String, maxBytes: Int64, maxDimension: Int) throws -> NSImage {
-        if let cached = cachedImage(for: path) {
+        if let cached = memoryCache.object(forKey: path as NSString) {
             return cached
         }
         _ = try validate(path: path, maxBytes: maxBytes, maxDimension: maxDimension)
         guard let image = NSImage(contentsOfFile: path) else {
             throw AppError.imageUndecodable(path: path)
         }
-        storeImage(image, for: path)
+        memoryCache.setObject(image, forKey: path as NSString)
         return image
     }
 
     /// 设置页预览用：ImageIO 缩略图，避免把 4K/5K 原图读进 SwiftUI body。
     static func loadThumbnail(path: String, maxPixelSize: Int = 512) -> NSImage? {
-        let key = "thumb:\(maxPixelSize):\(path)"
-        if let cached = cachedThumbnail(for: key) {
+        let key = "\(thumbnailKeyPrefix)\(maxPixelSize):\(path)" as NSString
+        if let cached = memoryCache.object(forKey: key) {
             return cached
         }
         let url = URL(fileURLWithPath: path)
@@ -76,7 +84,7 @@ enum ImagePipeline {
             return nil
         }
         let image = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-        storeThumbnail(image, for: key)
+        memoryCache.setObject(image, forKey: key)
         return image
     }
 
@@ -160,20 +168,15 @@ enum ImagePipeline {
     }
 
     static func invalidateCache() {
-        cacheQueue.sync {
-            memoryCache.removeAll()
-            thumbnailCache.removeAll()
-        }
+        memoryCache.removeAllObjects()
     }
 
     static func invalidate(path: String) {
-        cacheQueue.sync {
-            memoryCache.removeValue(forKey: path)
-            let keys = thumbnailCache.keys.filter { $0.hasSuffix(path) }
-            for key in keys {
-                thumbnailCache.removeValue(forKey: key)
-            }
-        }
+        // 原图键
+        memoryCache.removeObject(forKey: path as NSString)
+        // 缩略图键形如 "thumb:<size>:<path>"，NSCache 不支持前缀删除；
+        // 直接清空整缓存（设置页路径变更不频繁，代价可接受，且避免遍历锁）。
+        memoryCache.removeAllObjects()
     }
 
     private static func drawRect(for imageSize: CGSize, target: CGSize, mode: ScaleMode) -> CGRect {
@@ -198,21 +201,5 @@ enum ImagePipeline {
             let h = imageSize.height * scale
             return CGRect(x: (target.width - w) / 2, y: (target.height - h) / 2, width: w, height: h)
         }
-    }
-
-    private static func cachedImage(for path: String) -> NSImage? {
-        cacheQueue.sync { memoryCache[path] }
-    }
-
-    private static func storeImage(_ image: NSImage, for path: String) {
-        cacheQueue.sync { memoryCache[path] = image }
-    }
-
-    private static func cachedThumbnail(for key: String) -> NSImage? {
-        cacheQueue.sync { thumbnailCache[key] }
-    }
-
-    private static func storeThumbnail(_ image: NSImage, for key: String) {
-        cacheQueue.sync { thumbnailCache[key] = image }
     }
 }

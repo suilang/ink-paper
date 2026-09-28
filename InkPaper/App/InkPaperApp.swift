@@ -35,6 +35,7 @@ struct InkPaperApp: App {
 struct MenuBarMenuContent: View {
     @ObservedObject private var modeEngine = AppServices.shared.modeEngine
     @ObservedObject private var configStore = AppServices.shared.configStore
+    @ObservedObject private var standReminder = AppServices.shared.standReminder
 
     var body: some View {
         let mode = modeEngine.activeMode?.displayName ?? "未启用"
@@ -67,6 +68,23 @@ struct MenuBarMenuContent: View {
             modeEngine.switchToAsync(.overlay)
         }
         .disabled(modeEngine.isBusy)
+        Divider()
+        // 活动提醒快捷入口
+        Button("立即休息") {
+            standReminder.triggerNow()
+        }
+        if standReminder.state == .paused {
+            Button("恢复活动提醒") {
+                standReminder.togglePause()
+            }
+        } else {
+            Button("暂停活动提醒") {
+                standReminder.togglePause()
+            }
+        }
+        if let next = standReminder.nextFireDate {
+            Text("下次提醒：\(next.formatted(.dateTime.hour().minute().second()))")
+        }
         Divider()
         Button("运行诊断") {
             Task {

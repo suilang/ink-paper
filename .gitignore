@@ -1,4 +1,5 @@
 .derivedData/
+.derivedDataRelease/
 build/
 *.xcuserstate
 xcuserdata/

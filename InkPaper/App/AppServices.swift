@@ -9,6 +9,7 @@ final class AppServices: ObservableObject {
     let displayRegistry: DisplayRegistry
     let modeEngine: ModeEngine
     let notifier: AppNotifier
+    let standReminder: StandReminderEngine
 
     private init() {
         let configStore = ConfigStore()
@@ -17,5 +18,8 @@ final class AppServices: ObservableObject {
         self.displayRegistry = displayRegistry
         self.modeEngine = ModeEngine(configStore: configStore, displayRegistry: displayRegistry)
         self.notifier = AppNotifier()
+        let standReminder = StandReminderEngine()
+        standReminder.bind(to: configStore, displayRegistry: displayRegistry)
+        self.standReminder = standReminder
     }
 }

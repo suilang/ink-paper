@@ -86,6 +86,61 @@ struct HealthCheckSummary: Codable, Equatable, Sendable {
     static let empty = HealthCheckSummary(passCount: 0, warnCount: 0, failCount: 0, lines: [])
 }
 
+// MARK: - Stand Reminder
+
+/// 活动提醒间隔（10–25 分钟，每 5 分钟一档）。
+enum ReminderInterval: Int, Codable, CaseIterable, Identifiable, Sendable {
+    case min10 = 10
+    case min15 = 15
+    case min20 = 20
+    case min25 = 25
+
+    var id: Int { rawValue }
+    var displayName: String { "\(rawValue) 分钟" }
+    var seconds: TimeInterval { TimeInterval(rawValue) * 60 }
+}
+
+/// 提示窗展示范围。
+enum ReminderDisplayMode: String, Codable, CaseIterable, Identifiable, Sendable {
+    /// 仅主屏。
+    case mainOnly
+    /// 仅主外接屏（无外接屏时退化为主屏）。
+    case externalOnly
+    /// 主屏 + 主外接屏都显示。
+    case all
+    // 兼容旧值
+    case single
+    case dual
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .mainOnly, .single: return "仅主屏"
+        case .externalOnly: return "仅副屏"
+        case .all, .dual: return "主副屏都显示"
+        }
+    }
+
+    /// 归一化为新枚举值（兼容 single/dual）。
+    var normalized: Self {
+        switch self {
+        case .single: return .mainOnly
+        case .dual: return .all
+        default: return self
+        }
+    }
+}
+
+/// 单次休息时长（小休 20s / 大休 60s）。
+enum ReminderBreakDuration: Int, Codable, CaseIterable, Identifiable, Sendable {
+    case short = 20
+    case long = 60
+
+    var id: Int { rawValue }
+    var displayName: String { rawValue >= 60 ? "\(rawValue / 60) 分钟" : "\(rawValue) 秒" }
+    var seconds: TimeInterval { TimeInterval(rawValue) }
+}
+
 struct AppConfig: Codable, Equatable, Sendable {
     // General
     var launchAtLogin: Bool
@@ -124,6 +179,23 @@ struct AppConfig: Codable, Equatable, Sendable {
     var maxImageBytes: Int64
     var maxImageDimension: Int
 
+    // Stand Reminder（活动提醒）
+    var standReminderEnabled: Bool
+    var standReminderInterval: ReminderInterval
+    var standReminderDisplayMode: ReminderDisplayMode
+    /// 自动交替大小休息：每 3 次小休后自动 1 次大休。
+    var standReminderAutoAlternate: Bool
+    /// 是否启用大休息。关闭后即使开启自动交替，也只触发小休息。
+    var standReminderLongBreakEnabled: Bool
+    /// 自动交替关闭时使用的固定休息时长。
+    var standReminderPreferredBreak: ReminderBreakDuration
+    /// 延期时长（分钟，当前固定 5）。
+    var standReminderSnoozeMinutes: Int
+    /// 运行态：上次触发时间，用于重启后估算。
+    var standReminderLastFiredAt: Date?
+    /// 用于自动交替计数与主题色轮转。
+    var standReminderCycleIndex: Int
+
     enum CodingKeys: String, CodingKey {
         case launchAtLogin, showMenuBarExtra, openConfigOnLaunch, language
         case lastMode, preferredMode, backupSystemWallpaperBeforeSwitch
@@ -132,6 +204,9 @@ struct AppConfig: Codable, Equatable, Sendable {
         case overlayEnabled, ignoreMouseEvents, restoreOnDisplayChange, hideOnAppQuit
         case checkOnLaunch, autoFallbackToOverlay, notifyOnFallback, lastCheckAt, lastCheckReport
         case maxImageBytes, maxImageDimension
+        case standReminderEnabled, standReminderInterval, standReminderDisplayMode
+        case standReminderAutoAlternate, standReminderLongBreakEnabled, standReminderPreferredBreak, standReminderSnoozeMinutes
+        case standReminderLastFiredAt, standReminderCycleIndex
     }
 
     init(
@@ -160,7 +235,16 @@ struct AppConfig: Codable, Equatable, Sendable {
         lastCheckAt: Date?,
         lastCheckReport: HealthCheckSummary,
         maxImageBytes: Int64,
-        maxImageDimension: Int
+        maxImageDimension: Int,
+        standReminderEnabled: Bool = false,
+        standReminderInterval: ReminderInterval = .min20,
+        standReminderDisplayMode: ReminderDisplayMode = .mainOnly,
+        standReminderAutoAlternate: Bool = true,
+        standReminderLongBreakEnabled: Bool = true,
+        standReminderPreferredBreak: ReminderBreakDuration = .short,
+        standReminderSnoozeMinutes: Int = 5,
+        standReminderLastFiredAt: Date? = nil,
+        standReminderCycleIndex: Int = 0
     ) {
         self.launchAtLogin = launchAtLogin
         self.showMenuBarExtra = showMenuBarExtra
@@ -188,6 +272,15 @@ struct AppConfig: Codable, Equatable, Sendable {
         self.lastCheckReport = lastCheckReport
         self.maxImageBytes = maxImageBytes
         self.maxImageDimension = maxImageDimension
+        self.standReminderEnabled = standReminderEnabled
+        self.standReminderInterval = standReminderInterval
+        self.standReminderDisplayMode = standReminderDisplayMode
+        self.standReminderAutoAlternate = standReminderAutoAlternate
+        self.standReminderLongBreakEnabled = standReminderLongBreakEnabled
+        self.standReminderPreferredBreak = standReminderPreferredBreak
+        self.standReminderSnoozeMinutes = standReminderSnoozeMinutes
+        self.standReminderLastFiredAt = standReminderLastFiredAt
+        self.standReminderCycleIndex = standReminderCycleIndex
     }
 
     init(from decoder: Decoder) throws {
@@ -229,6 +322,15 @@ struct AppConfig: Codable, Equatable, Sendable {
         lastCheckReport = try c.decodeIfPresent(HealthCheckSummary.self, forKey: .lastCheckReport) ?? .empty
         maxImageBytes = try c.decodeIfPresent(Int64.self, forKey: .maxImageBytes) ?? defaults.maxImageBytes
         maxImageDimension = try c.decodeIfPresent(Int.self, forKey: .maxImageDimension) ?? defaults.maxImageDimension
+        standReminderEnabled = try c.decodeIfPresent(Bool.self, forKey: .standReminderEnabled) ?? defaults.standReminderEnabled
+        standReminderInterval = try c.decodeIfPresent(ReminderInterval.self, forKey: .standReminderInterval) ?? defaults.standReminderInterval
+        standReminderDisplayMode = try c.decodeIfPresent(ReminderDisplayMode.self, forKey: .standReminderDisplayMode) ?? defaults.standReminderDisplayMode
+        standReminderAutoAlternate = try c.decodeIfPresent(Bool.self, forKey: .standReminderAutoAlternate) ?? defaults.standReminderAutoAlternate
+        standReminderLongBreakEnabled = try c.decodeIfPresent(Bool.self, forKey: .standReminderLongBreakEnabled) ?? defaults.standReminderLongBreakEnabled
+        standReminderPreferredBreak = try c.decodeIfPresent(ReminderBreakDuration.self, forKey: .standReminderPreferredBreak) ?? defaults.standReminderPreferredBreak
+        standReminderSnoozeMinutes = try c.decodeIfPresent(Int.self, forKey: .standReminderSnoozeMinutes) ?? defaults.standReminderSnoozeMinutes
+        standReminderLastFiredAt = try c.decodeIfPresent(Date.self, forKey: .standReminderLastFiredAt)
+        standReminderCycleIndex = try c.decodeIfPresent(Int.self, forKey: .standReminderCycleIndex) ?? defaults.standReminderCycleIndex
     }
 
     static let `default` = AppConfig(

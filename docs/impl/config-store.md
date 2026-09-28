@@ -42,6 +42,21 @@
 | `maxImageBytes` | 50MB | 校验上限 |
 | `maxImageDimension` | 16384 | 边长上限 |
 
+### 活动提醒（StandReminder）
+
+| 字段 | 默认 | 行为 |
+|------|------|------|
+| `standReminderEnabled` | `false` | 是否启用活动提醒 |
+| `standReminderInterval` | `min20` | 提醒间隔：10/15/20/25 分钟（每 5 分钟一档） |
+| `standReminderDisplayMode` | `single` | 提示窗范围：仅主屏 / 主屏+主外接屏 |
+| `standReminderAutoAlternate` | `true` | 自动交替大小休息：每 3 次小休后 1 次大休 |
+| `standReminderPreferredBreak` | `short` | 自动交替关闭时的固定休息时长（20s/60s） |
+| `standReminderSnoozeMinutes` | `5` | 延期时长（当前固定 5，留字段便于扩展） |
+| `standReminderLastFiredAt` | `nil` | 运行态：上次触发时间 |
+| `standReminderCycleIndex` | `0` | 自动交替计数 + 主题色/文案轮转索引 |
+
+旧配置无这些字段时走默认值（与 `wallpaperEnabled` 迁移逻辑一致）。
+
 ## 分屏路径解析
 
 `AppConfig.imagePath(forDisplayID:)`（仅当 `perDisplayEnabled`）：

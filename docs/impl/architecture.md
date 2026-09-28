@@ -15,10 +15,11 @@ InkPaper/
   Mode/          ModeEngine（编排中心）
   SystemWallpaper/  模式 A
   Overlay/       模式 B
+  StandReminder/  活动提醒（独立于壁纸模式）
   Display/       屏幕注册表
   Image/         校验与缩放
   Health/        健康检查
-  Settings/      SettingsRootView
+  Settings/      SettingsRootView + Pages/ + Components/
   Support/       错误类型、通知
   Resources/     Info.plist
 ```
@@ -30,16 +31,18 @@ InkPaperApp (SwiftUI)
   ├─ AppServices.shared
   │    ├─ ConfigStore
   │    ├─ DisplayRegistry
-  │    └─ ModeEngine → Image / SystemWallpaper / Overlay / Health
+  │    ├─ ModeEngine → Image / SystemWallpaper / Overlay / Health
+  │    └─ StandReminder → 独立提示窗（不触达壁纸服务）
   ├─ Window(settings) → SettingsRootView
-  ├─ MenuBarExtra → 菜单操作
+  ├─ MenuBarExtra → 菜单操作（含立即休息/暂停提醒）
   └─ AppDelegate（activationPolicy、bootstrap、打开/兜底设置窗）
 ```
 
 规则：
 
-- UI 只通过 `AppServices` / `ModeEngine` / `ConfigStore` / `DisplayRegistry` 操作。
+- UI 只通过 `AppServices` / `ModeEngine` / `ConfigStore` / `DisplayRegistry` / `StandReminder` 操作。
 - `ModeEngine` 是唯一允许同时触达模式 A/B 服务的编排层，负责互斥与回滚。
+- `StandReminder` 与壁纸模式解耦，不调用 `ModeEngine` API，不复用 overlay 窗口。
 
 ## 运行时状态
 
@@ -49,6 +52,7 @@ InkPaperApp (SwiftUI)
 | `activeMode` | `ModeEngine` | `system` / `overlay` / `nil` |
 | `displays` | `DisplayRegistry` | 当前 `NSScreen` 快照 |
 | overlay 窗口表 | `OverlayWallpaperService` | `displayID → NSWindow` |
+| `state` / 提示窗表 | `StandReminderEngine` | `idle/showing/snoozing/paused`；`displayID → StandReminderWindow` |
 
 ## 模式互斥
 

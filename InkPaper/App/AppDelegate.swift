@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let services = AppServices.shared
         services.notifier.requestAuthorizationIfNeeded()
         services.modeEngine.bootstrap()
+        services.standReminder.bootstrap()
 
         // 延后打开，等 SwiftUI Window scene 物化完成。
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -44,7 +45,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DistributedNotificationCenter.default().removeObserver(singleInstanceObserver)
             self.singleInstanceObserver = nil
         }
-        AppServices.shared.modeEngine.shutdown()
+        let services = AppServices.shared
+        services.standReminder.shutdown()
+        services.modeEngine.shutdown()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
