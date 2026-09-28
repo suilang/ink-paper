@@ -64,18 +64,15 @@ struct ReminderPage: View {
                             }
                         )
                     )
-                    Toggle(
-                        "启用大休息",
-                        isOn: Binding(
-                            get: { configStore.config.standReminderLongBreakEnabled },
-                            set: { value in
-                                configStore.update { $0.standReminderLongBreakEnabled = value }
-                            }
-                        )
-                    )
-                    if !configStore.config.standReminderAutoAlternate {
+                    if configStore.config.standReminderAutoAlternate {
+                        LabeledContent("小休息", value: "\(ReminderBreakDuration.short.displayName)")
+                        LabeledContent("大休息", value: "\(ReminderBreakDuration.long.displayName)")
+                        Text("每 3 次小休后自动来 1 次大休，更贴近健康节奏。")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    } else {
                         Picker(
-                            "固定休息时长",
+                            "每次休息时长",
                             selection: Binding(
                                 get: { configStore.config.standReminderPreferredBreak },
                                 set: { value in
@@ -83,22 +80,12 @@ struct ReminderPage: View {
                                 }
                             )
                         ) {
-                            ForEach(ReminderBreakDuration.allCases) { duration in
-                                Text(duration.displayName).tag(duration)
-                            }
+                            // 关闭自动交替即全程小休，仅提供小休时长。
+                            Text(ReminderBreakDuration.short.displayName).tag(ReminderBreakDuration.short)
                         }
-                    } else {
-                        LabeledContent("小休息", value: "\(ReminderBreakDuration.short.displayName)")
-                        if configStore.config.standReminderLongBreakEnabled {
-                            LabeledContent("大休息", value: "\(ReminderBreakDuration.long.displayName)")
-                            Text("每 3 次小休后自动来 1 次大休，更贴近健康节奏。")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("已关闭大休息，所有提醒均为小休息时长。")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
+                        Text("关闭自动交替后，每次提醒均为小休息时长。")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
 

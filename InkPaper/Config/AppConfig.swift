@@ -183,10 +183,8 @@ struct AppConfig: Codable, Equatable, Sendable {
     var standReminderEnabled: Bool
     var standReminderInterval: ReminderInterval
     var standReminderDisplayMode: ReminderDisplayMode
-    /// 自动交替大小休息：每 3 次小休后自动 1 次大休。
+    /// 自动交替大小休息：每 3 次小休后自动 1 次大休。关闭后恒为小休。
     var standReminderAutoAlternate: Bool
-    /// 是否启用大休息。关闭后即使开启自动交替，也只触发小休息。
-    var standReminderLongBreakEnabled: Bool
     /// 自动交替关闭时使用的固定休息时长。
     var standReminderPreferredBreak: ReminderBreakDuration
     /// 延期时长（分钟，当前固定 5）。
@@ -205,7 +203,7 @@ struct AppConfig: Codable, Equatable, Sendable {
         case checkOnLaunch, autoFallbackToOverlay, notifyOnFallback, lastCheckAt, lastCheckReport
         case maxImageBytes, maxImageDimension
         case standReminderEnabled, standReminderInterval, standReminderDisplayMode
-        case standReminderAutoAlternate, standReminderLongBreakEnabled, standReminderPreferredBreak, standReminderSnoozeMinutes
+        case standReminderAutoAlternate, standReminderPreferredBreak, standReminderSnoozeMinutes
         case standReminderLastFiredAt, standReminderCycleIndex
     }
 
@@ -240,7 +238,6 @@ struct AppConfig: Codable, Equatable, Sendable {
         standReminderInterval: ReminderInterval = .min20,
         standReminderDisplayMode: ReminderDisplayMode = .mainOnly,
         standReminderAutoAlternate: Bool = true,
-        standReminderLongBreakEnabled: Bool = true,
         standReminderPreferredBreak: ReminderBreakDuration = .short,
         standReminderSnoozeMinutes: Int = 5,
         standReminderLastFiredAt: Date? = nil,
@@ -276,7 +273,6 @@ struct AppConfig: Codable, Equatable, Sendable {
         self.standReminderInterval = standReminderInterval
         self.standReminderDisplayMode = standReminderDisplayMode
         self.standReminderAutoAlternate = standReminderAutoAlternate
-        self.standReminderLongBreakEnabled = standReminderLongBreakEnabled
         self.standReminderPreferredBreak = standReminderPreferredBreak
         self.standReminderSnoozeMinutes = standReminderSnoozeMinutes
         self.standReminderLastFiredAt = standReminderLastFiredAt
@@ -326,7 +322,6 @@ struct AppConfig: Codable, Equatable, Sendable {
         standReminderInterval = try c.decodeIfPresent(ReminderInterval.self, forKey: .standReminderInterval) ?? defaults.standReminderInterval
         standReminderDisplayMode = try c.decodeIfPresent(ReminderDisplayMode.self, forKey: .standReminderDisplayMode) ?? defaults.standReminderDisplayMode
         standReminderAutoAlternate = try c.decodeIfPresent(Bool.self, forKey: .standReminderAutoAlternate) ?? defaults.standReminderAutoAlternate
-        standReminderLongBreakEnabled = try c.decodeIfPresent(Bool.self, forKey: .standReminderLongBreakEnabled) ?? defaults.standReminderLongBreakEnabled
         standReminderPreferredBreak = try c.decodeIfPresent(ReminderBreakDuration.self, forKey: .standReminderPreferredBreak) ?? defaults.standReminderPreferredBreak
         standReminderSnoozeMinutes = try c.decodeIfPresent(Int.self, forKey: .standReminderSnoozeMinutes) ?? defaults.standReminderSnoozeMinutes
         standReminderLastFiredAt = try c.decodeIfPresent(Date.self, forKey: .standReminderLastFiredAt)

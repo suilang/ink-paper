@@ -119,21 +119,19 @@ final class StandReminderEngine: ObservableObject {
 
     private func present() {
         guard let configStore else { return }
-        // 计算本次休息时长（自动交替：每 4 次中第 4 次为大休）。
+        // 计算本次休息时长：
+        // - 自动交替：每 4 次循环第 4 次为大休，其余小休。
+        // - 关闭自动交替：恒为小休（全程小休，不再有大休选项）。
         let cycleIndex = configStore.config.standReminderCycleIndex
         let config = configStore.config
         let isLong: Bool
         let duration: TimeInterval
         if config.standReminderAutoAlternate {
-            // 每 4 次循环，第 4 次（index % 4 == 3）为大休；若关闭大休息则恒为小休。
-            let wouldBeLong = cycleIndex % 4 == 3
-            isLong = wouldBeLong && config.standReminderLongBreakEnabled
+            isLong = cycleIndex % 4 == 3
             duration = isLong ? ReminderBreakDuration.long.seconds : ReminderBreakDuration.short.seconds
         } else {
-            let preferred = config.standReminderPreferredBreak
-            // 固定模式下若关闭大休息，强制使用小休时长。
-            isLong = preferred == .long && config.standReminderLongBreakEnabled
-            duration = isLong ? ReminderBreakDuration.long.seconds : ReminderBreakDuration.short.seconds
+            isLong = false
+            duration = ReminderBreakDuration.short.seconds
         }
         let theme = ReminderTheme.pick(cycleIndex: cycleIndex)
         let tip = ActivityTips.pick(cycleIndex: cycleIndex)

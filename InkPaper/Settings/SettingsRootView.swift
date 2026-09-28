@@ -31,7 +31,7 @@ struct SettingsRootView: View {
             }
 
             TabView(selection: $selectedTab) {
-                WallpaperModePage(state: state)
+                WallpaperModePage(state: state, modeEngine: modeEngine)
                     .tabItem { Label("壁纸与模式", systemImage: "photo.on.rectangle") }
                     .tag(SettingsTab.wallpaperMode)
 

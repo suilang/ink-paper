@@ -6,9 +6,9 @@ import SwiftUI
 /// 由原 `wallpaperPage` 与 `modePage` 合并而来（见 settings-ui 文档）。
 struct WallpaperModePage: View {
     @ObservedObject var state: SettingsSharedState
+    @ObservedObject var modeEngine: ModeEngine
 
     private var configStore: ConfigStore? { state.configStore }
-    private var modeEngine: ModeEngine? { state.modeEngine }
     private var displayRegistry: DisplayRegistry? { state.displayRegistry }
 
     var body: some View {
@@ -65,7 +65,7 @@ struct WallpaperModePage: View {
                         displayRegistry?.refresh()
                         state.statusBanner = "已刷新显示器列表（\(displayRegistry?.displays.count ?? 0) 块）"
                     }
-                    .disabled(modeEngine?.isBusy ?? false)
+                    .disabled(modeEngine.isBusy)
                 }
             }
 
@@ -82,7 +82,7 @@ struct WallpaperModePage: View {
                     Button("清除全部已选壁纸", role: .destructive) {
                         clearAllImages()
                     }
-                    .disabled(modeEngine?.isBusy ?? false)
+                    .disabled(modeEngine.isBusy)
                 } footer: {
                     Text("清除图片后会自动停用。若只想暂时不显示，请关闭上方「启用壁纸」。")
                         .font(.caption)
@@ -102,7 +102,6 @@ struct WallpaperModePage: View {
                 isOn: Binding(
                     get: { configStore?.config.wallpaperEnabled ?? false },
                     set: { enabled in
-                        guard let modeEngine else { return }
                         if enabled {
                             guard canApplyWallpaper else {
                                 state.alertMessage = "请先选择至少一张壁纸图片，再启用"
@@ -117,11 +116,11 @@ struct WallpaperModePage: View {
                     }
                 )
             )
-            .disabled((modeEngine?.isBusy ?? false) || (!(configStore?.config.wallpaperEnabled ?? false) && !canApplyWallpaper))
+            .disabled((modeEngine.isBusy) || (!(configStore?.config.wallpaperEnabled ?? false) && !canApplyWallpaper))
 
             HStack(spacing: 8) {
                 statusBadge
-                if modeEngine?.isBusy ?? false {
+                if modeEngine.isBusy {
                     ProgressView().controlSize(.small)
                 }
             }
@@ -135,15 +134,15 @@ struct WallpaperModePage: View {
     private var statusBadge: some View {
         let text: String
         let color: Color
-        let busy = modeEngine?.isBusy ?? false
+        let busy = modeEngine.isBusy
         let enabled = configStore?.config.wallpaperEnabled ?? false
         if busy {
             text = "处理中"
             color = .orange
-        } else if modeEngine?.lastError != nil, enabled {
+        } else if modeEngine.lastError != nil, enabled {
             text = "失败"
             color = .red
-        } else if enabled, let mode = modeEngine?.activeMode {
+        } else if enabled, let mode = modeEngine.activeMode {
             text = "运行中 · \(mode.displayName)"
             color = .green
         } else if enabled {
@@ -194,59 +193,60 @@ struct WallpaperModePage: View {
                     Text(mode.displayName).tag(mode)
                 }
             }
-            .disabled(modeEngine?.isBusy ?? false)
+            .disabled(modeEngine.isBusy)
 
             Toggle("系统壁纸失败时自动降级到底层窗口", isOn: state.binding(\.autoFallbackToOverlay))
             Toggle("降级时通知", isOn: state.binding(\.notifyOnFallback))
             Toggle("切换前备份系统壁纸", isOn: state.binding(\.backupSystemWallpaperBeforeSwitch))
             Toggle("底层窗口出现在所有 Space", isOn: state.binding(\.applyToAllSpaces))
 
-            if let probe = modeEngine?.systemWallpaper.lastLockProbe {
-                Divider()
-                LabeledContent("系统壁纸策略") {
+            let probe = modeEngine.systemWallpaper.lastLockProbe
+            Divider()
+            LabeledContent("系统壁纸策略") {
+                VStack(alignment: .leading) {
                     Text(probe.isLocked ? "已锁定（MDM）" : "可写")
                         .foregroundStyle(probe.isLocked ? Color.orange : Color.secondary)
-                }
-                if probe.isLocked {
-                    Text(probe.summary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("自动模式下会改用底层窗口。强制系统壁纸会失败。")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    if probe.isLocked {
+                        Text(probe.summary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("自动模式下会改用底层窗口。强制系统壁纸会失败。")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
                 }
             }
 
             LabeledContent("当前模式") {
-                Text(modeEngine?.activeMode?.displayName ?? "未启用")
+                Text(modeEngine.activeMode?.displayName ?? "未启用")
             }
 
             HStack {
                 Button("按偏好立即应用（并启用）") {
                     state.statusBanner = "正在按偏好应用…"
-                    modeEngine?.applyPreferredModeAsync()
+                    modeEngine.applyPreferredModeAsync()
                 }
-                .disabled(modeEngine?.isBusy ?? false || !canApplyWallpaper)
+                .disabled(modeEngine.isBusy || !canApplyWallpaper)
 
                 Button("切换到系统壁纸（并启用）") {
                     state.statusBanner = "正在切换到系统壁纸…"
-                    modeEngine?.switchToAsync(.system)
+                    modeEngine.switchToAsync(.system)
                 }
-                .disabled(modeEngine?.isBusy ?? false || !canApplyWallpaper)
+                .disabled(modeEngine.isBusy || !canApplyWallpaper)
 
                 Button("切换到底层窗口（并启用）") {
                     state.statusBanner = "正在切换到底层窗口…"
-                    modeEngine?.switchToAsync(.overlay)
+                    modeEngine.switchToAsync(.overlay)
                 }
-                .disabled(modeEngine?.isBusy ?? false || !canApplyWallpaper)
+                .disabled(modeEngine.isBusy || !canApplyWallpaper)
             }
 
             if configStore?.config.wallpaperEnabled ?? false {
                 Button("停用壁纸", role: .destructive) {
                     state.statusBanner = "正在停用壁纸…"
-                    modeEngine?.disableWallpaperAsync()
+                    modeEngine.disableWallpaperAsync()
                 }
-                .disabled(modeEngine?.isBusy ?? false)
+                .disabled(modeEngine.isBusy)
             }
         }
     }
@@ -294,25 +294,25 @@ struct WallpaperModePage: View {
                     Button("选择图片…") {
                         pickImage(for: display.id)
                     }
-                    .disabled(modeEngine?.isBusy ?? false)
+                    .disabled(modeEngine.isBusy)
 
                     if isNative {
                         Button("恢复覆盖") {
                             restoreCoverage(displayID: display.id, displayName: display.localizedName)
                         }
-                        .disabled(modeEngine?.isBusy ?? false)
+                        .disabled(modeEngine.isBusy)
                     } else if hasCustom {
                         Button("改用兜底图") {
                             useGlobalFallback(displayID: display.id, displayName: display.localizedName)
                         }
-                        .disabled(modeEngine?.isBusy ?? false)
+                        .disabled(modeEngine.isBusy)
                     }
 
                     if !isNative {
                         Button("仅原生壁纸", role: .destructive) {
                             setNativeOnly(displayID: display.id, displayName: display.localizedName)
                         }
-                        .disabled(modeEngine?.isBusy ?? false)
+                        .disabled(modeEngine.isBusy)
                     }
                 }
             }
@@ -338,13 +338,13 @@ struct WallpaperModePage: View {
                     Button(configStore?.config.perDisplayEnabled == true ? "选择兜底图…" : "选择图片…") {
                         pickGlobalImage()
                     }
-                    .disabled(modeEngine?.isBusy ?? false)
+                    .disabled(modeEngine.isBusy)
 
                     if configStore?.config.imagePath != nil {
                         Button("移除", role: .destructive) {
                             clearGlobalImage()
                         }
-                        .disabled(modeEngine?.isBusy ?? false)
+                        .disabled(modeEngine.isBusy)
                     }
                 }
 
@@ -380,7 +380,7 @@ struct WallpaperModePage: View {
                 Text(mode.displayName).tag(mode)
             }
         }
-        .disabled(modeEngine?.isBusy ?? false)
+        .disabled(modeEngine.isBusy)
         if configStore?.config.scaleMode == .fit {
             ColorPicker(
                 "留边颜色",
@@ -395,7 +395,7 @@ struct WallpaperModePage: View {
                     }
                 )
             )
-            .disabled(modeEngine?.isBusy ?? false)
+            .disabled(modeEngine.isBusy)
         }
     }
 
@@ -517,7 +517,7 @@ struct WallpaperModePage: View {
     }
 
     private func setNativeOnly(displayID: String, displayName: String) {
-        guard let configStore, let modeEngine else { return }
+        guard let configStore else { return }
         configStore.update {
             $0.perDisplayNativeIDs.insert(displayID)
             if let path = $0.perDisplayMap[displayID], path.isEmpty {
@@ -548,7 +548,7 @@ struct WallpaperModePage: View {
     }
 
     private func autoDisableIfNoImageLeft(force: Bool = false) {
-        guard let configStore, let modeEngine else { return }
+        guard let configStore else { return }
         let noAssets = force || !configStore.config.hasWallpaperImageAssets()
         guard noAssets else { return }
         if configStore.config.wallpaperEnabled || modeEngine.overlay.isActive || modeEngine.activeMode != nil {
@@ -558,7 +558,7 @@ struct WallpaperModePage: View {
     }
 
     private func applyDesktopAfterConfigChange() {
-        guard let configStore, let modeEngine else { return }
+        guard let configStore else { return }
         if configStore.config.wallpaperEnabled {
             if canApplyWallpaper {
                 modeEngine.updateDesktopAsync()
